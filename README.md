@@ -84,7 +84,21 @@ src/
 - Repli automatique (fond animé en CSS) si WebGL est indisponible ou si la 3D échoue.
 - `prefers-reduced-motion` est respecté (mouvements réduits, transitions courtes).
 
-## Version PowerPoint
+## Version PowerPoint animée (recommandée)
+
+Fichier : `export/Presentation-EST-Sale-animee.pptx` (≈ 1 Mo, généré, non versionné dans Git).
+
+- Aucune vidéo : chaque scène est dessinée avec des formes et icônes PowerPoint natives
+  (personnes, organigramme, ampoules, arbre, cycle, zellige…), entièrement modifiables.
+- Une diapositive par étape (39) ; la transition **Morph** déplace les éléments d'une étape à l'autre
+  (l'organigramme devient une équipe, les ampoules dessinent une grande ampoule, l'arbre pousse…).
+- ≈ 1 400 animations PowerPoint automatiques : apparitions, zooms, balayages, rotations, pulsations,
+  trajectoires (flux, énergie qui circule). Aucun clic supplémentaire : chaque clic passe à l'étape suivante.
+- Notes de l'oratrice dans chaque diapositive.
+
+Régénérer (Windows, PowerPoint installé) : `npm run pptx:native`.
+
+## Version PowerPoint avec vidéos 3D (alternative)
 
 Fichier : `export/Presentation-EST-Sale.pptx` (≈ 130 Mo, non versionné dans Git).
 
