@@ -5,7 +5,19 @@ Conçue et présentée par **Aya Yakoubi** et **Hassna Elhaddajy**.
 
 React + TypeScript · Vite · Three.js / React Three Fiber / Drei · GSAP · Motion · Tailwind CSS · Lucide.
 
-## Lancer la présentation
+## Installation simple sur un PC Windows (sans connaissances techniques)
+
+1. Récupérez le fichier **`installer-presentation.bat`** (par WhatsApp, clé USB, ou depuis ce dépôt GitHub).
+2. Double-cliquez dessus et laissez la fenêtre ouverte (5 à 10 minutes, Internet nécessaire).
+   Il installe Git et Node.js si besoin, télécharge la présentation, installe tout et la prépare.
+   Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur *Informations complémentaires* → *Exécuter quand même*.
+3. Ensuite, à chaque fois : double-cliquez sur **`lancer-presentation`** (placé sur le Bureau).
+   Il récupère la dernière version (si Internet est disponible), prépare la présentation et l'ouvre dans le navigateur.
+   Gardez sa fenêtre ouverte pendant la présentation ; fermez-la pour arrêter.
+
+La présentation est installée dans `%USERPROFILE%\Aya-Hassna-Presentation`. Après l'installation, elle fonctionne aussi hors ligne.
+
+## Lancer la présentation (développeurs)
 
 ```bash
 npm install
