@@ -113,3 +113,12 @@ Fichier : `export/Presentation-EST-Sale.pptx` (≈ 130 Mo, non versionné dans G
    `http://localhost:5199/?record=1&seconds=8` dans Edge ou Chrome (fenêtre au premier plan ou en mode headless).
    Les vidéos arrivent dans `recordings/` (`&only=3` pour ne refaire qu'une diapositive).
 2. `npm run pptx:scrims` (une seule fois), puis `npm run pptx`.
+
+## Deuxième présentation : « Les 5 grands enjeux RH de 2023 » (carte conceptuelle)
+
+Fichier : `export/Enjeux-RH-2023-carte-conceptuelle.pptx` (≈ 0,6 Mo, généré).
+Contenu tiré du webinar Bleexo « Les 5 grands enjeux RH de 2023 » ; les chiffres sont ceux cités dans le webinar.
+12 diapositives organisées comme une carte conceptuelle : la transition Morph zoome de la carte vers chaque branche,
+avec ≈ 300 animations PowerPoint (flux lumineux le long des liens, pulsations, rotations, apparitions en cascade).
+
+Régénérer : `npm run pptx:native` une première fois (icônes), puis `npm run pptx:enjeux`.

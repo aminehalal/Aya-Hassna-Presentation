@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "pptx": "node tools/pptx/build-deck.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize.ps1 && python tools/pptx/set_morph.py export/with-videos.pptx export/manifest.json export/Presentation-EST-Sale.pptx",
     "pptx:scrims": "python tools/pptx/make_scrims.py export",
-    "pptx:native": "python tools/pptx/make_native_assets.py && node tools/pptx/build-native.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1"
+    "pptx:native": "python tools/pptx/make_native_assets.py && node tools/pptx/build-native.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1",
+    "pptx:enjeux": "node tools/pptx/build-enjeux.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1 -Base enjeux-base.pptx -Plan enjeux-anims.json -Output Enjeux-RH-2023-carte-conceptuelle.pptx"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

@@ -8,12 +8,17 @@
 #
 #   powershell -ExecutionPolicy Bypass -File tools\pptx\finalize-native.ps1
 
-param([string]$Root = (Resolve-Path "$PSScriptRoot\..\..").Path)
+param(
+  [string]$Root = (Resolve-Path "$PSScriptRoot\..\..").Path,
+  [string]$Base = 'native-base.pptx',
+  [string]$Plan = 'native-anims.json',
+  [string]$Output = 'Presentation-EST-Sale-animee.pptx'
+)
 $ErrorActionPreference = 'Stop'
 
 $export = Join-Path $Root 'export'
-$plan = Get-Content (Join-Path $export 'native-anims.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$output = Join-Path $export 'Presentation-EST-Sale-animee.pptx'
+$animPlan = Get-Content (Join-Path $export $Plan) -Raw -Encoding UTF8 | ConvertFrom-Json
+$outPath = Join-Path $export $Output
 
 # MsoAnimEffect / MsoAnimDirection values read from the PowerPoint type library
 $ENTER = @{ fade = 10; zoom = 23; fadedZoom = 48; ascend = 39; expand = 50; wipe = 22; fly = 2; wheel = 21 }
@@ -25,7 +30,7 @@ $FADE = 1793
 $ppt = New-Object -ComObject PowerPoint.Application
 $applied = 0; $skipped = 0; $missing = 0
 try {
-  $pres = $ppt.Presentations.Open((Join-Path $export 'native-base.pptx'), -1, 0, 0)
+  $pres = $ppt.Presentations.Open((Join-Path $export $Base), -1, 0, 0)
   $previous = @{}
   for ($n = 1; $n -le $pres.Slides.Count; $n++) {
     $slide = $pres.Slides.Item($n)
@@ -36,7 +41,7 @@ try {
     if ($n -eq 1) { $t.EntryEffect = $FADE } else { $t.EntryEffect = $MORPH }
     $t.Duration = 1.1
 
-    $items = @($plan | Where-Object { $_.slide -eq $n })
+    $items = @($animPlan | Where-Object { $_.slide -eq $n })
     $seq = $slide.TimeLine.MainSequence
 
     # 1) looping ambient effects (start with the slide)
@@ -73,10 +78,10 @@ try {
     $previous = $names
     Write-Host ("  slide {0,2}: {1,3} effects" -f $n, $seq.Count)
   }
-  $pres.SaveAs($output, 24)
+  $pres.SaveAs($outPath, 24)
   $pres.Close()
   Write-Host "applied=$applied  morph-kept=$skipped  missing=$missing"
-  Write-Host "saved $output"
+  Write-Host "saved $outPath"
 } finally {
   $ppt.Quit() | Out-Null
 }
