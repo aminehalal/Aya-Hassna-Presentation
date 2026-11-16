@@ -14,6 +14,10 @@ interface SceneCanvasProps {
   step: number;
   direction: 1 | -1;
   reducedMotion: boolean;
+  /** Recording mode: fixed pixel ratio, no adaptive quality */
+  fixedDpr?: number;
+  /** Changing it remounts the scenes (fresh entrance animation) */
+  resetKey?: number;
 }
 
 const BACKGROUND = '#03050b';
@@ -23,9 +27,9 @@ const BACKGROUND = '#03050b';
  * Adaptive quality: the device pixel ratio and particle budgets drop
  * automatically if the frame rate degrades (e.g. on a classroom laptop).
  */
-export default function SceneCanvas({ index, step, direction, reducedMotion }: SceneCanvasProps) {
+export default function SceneCanvas({ index, step, direction, reducedMotion, fixedDpr, resetKey = 0 }: SceneCanvasProps) {
   const [quality, setQuality] = useState<SceneSettings['quality']>('high');
-  const [dpr, setDpr] = useState(() => Math.min(1.75, window.devicePixelRatio || 1));
+  const [dpr, setDpr] = useState(() => fixedDpr ?? Math.min(1.75, window.devicePixelRatio || 1));
   const settings = useMemo(() => ({ reducedMotion, quality }), [reducedMotion, quality]);
   const accent = slides[index].accent;
   const eventSource = useMemo(() => document.getElementById('root') ?? undefined, []);
@@ -36,7 +40,7 @@ export default function SceneCanvas({ index, step, direction, reducedMotion }: S
       eventSource={eventSource}
       eventPrefix="client"
       camera={{ fov: 40, near: 0.1, far: 140, position: [0, 0, 22] }}
-      gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, stencil: false }}
+      gl={{ antialias: true, powerPreference: 'high-performance', alpha: false, stencil: false, preserveDrawingBuffer: fixedDpr !== undefined }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.05;
@@ -46,6 +50,7 @@ export default function SceneCanvas({ index, step, direction, reducedMotion }: S
       <SceneSettingsContext.Provider value={settings}>
         <color attach="background" args={[BACKGROUND]} />
         <fog attach="fog" args={[BACKGROUND, 14, 40]} />
+        {fixedDpr === undefined && (
         <PerformanceMonitor
           flipflops={3}
           onDecline={() => {
@@ -58,11 +63,12 @@ export default function SceneCanvas({ index, step, direction, reducedMotion }: S
             setQuality('low');
           }}
         />
+        )}
         <CameraController index={index} step={step} />
         <SceneLighting accent={accent} />
         <Nebula accent={accent} />
         <ParticleSystem accent={accent} index={index} direction={direction} />
-        <SceneSwitcher index={index} step={step} direction={direction} />
+        <SceneSwitcher key={resetKey} index={index} step={step} direction={direction} />
       </SceneSettingsContext.Provider>
     </Canvas>
   );

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pptx": "node tools/pptx/build-deck.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize.ps1 && python tools/pptx/set_morph.py export/with-videos.pptx export/manifest.json export/Presentation-EST-Sale.pptx",
+    "pptx:scrims": "python tools/pptx/make_scrims.py export"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -22,10 +24,13 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "mp4-muxer": "^5.2.2",
+    "pptxgenjs": "^4.0.1",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.8"

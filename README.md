@@ -83,3 +83,19 @@ src/
 - Le module 3D est chargé à part : le texte et les commandes sont utilisables immédiatement.
 - Repli automatique (fond animé en CSS) si WebGL est indisponible ou si la 3D échoue.
 - `prefers-reduced-motion` est respecté (mouvements réduits, transitions courtes).
+
+## Version PowerPoint
+
+Fichier : `export/Presentation-EST-Sale.pptx` (≈ 130 Mo, non versionné dans Git).
+
+- Une diapositive PowerPoint par étape de la présentation web (39 diapositives, 14 sections).
+- Texte français natif et modifiable, notes de l'oratrice dans les notes de chaque diapositive.
+- La 3D de chaque étape est une vidéo (MP4) en arrière-plan, lancée automatiquement et figée sur sa dernière image.
+- Transitions **Morph** entre les étapes d'une même scène, fondu entre les scènes (PowerPoint 2019 / Microsoft 365 ; les versions plus anciennes affichent un fondu).
+
+### Régénérer le fichier (Windows, PowerPoint installé)
+
+1. Enregistrer la 3D : lancer `RECORD_SCENES=1 npx vite --port 5199`, puis ouvrir
+   `http://localhost:5199/?record=1&seconds=8` dans Edge ou Chrome (fenêtre au premier plan ou en mode headless).
+   Les vidéos arrivent dans `recordings/` (`&only=3` pour ne refaire qu'une diapositive).
+2. `npm run pptx:scrims` (une seule fois), puis `npm run pptx`.

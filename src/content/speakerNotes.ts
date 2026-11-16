@@ -8,7 +8,7 @@ export const speakerNotes: Record<SlideId, SpeakerNote> = {
       'Bonjour à toutes et à tous. Nous sommes Aya Yakoubi et Hassna Elhaddajy, et nous allons vous présenter notre exposé de sociologie des organisations.',
       "Notre sujet : le changement, l'innovation et l'apprentissage dans les organisations.",
       "Ces trois notions sont souvent étudiées séparément. Notre objectif est de montrer qu'elles forment un même mouvement : celui d'une organisation qui évolue.",
-      "Cet objet au centre symbolise l'organisation : un noyau vivant, entouré de structures qui bougent autour de lui.",
+      "Ce noyau lumineux symbolise l'organisation ; les personnes qui apparaissent autour de lui rappellent qu'une organisation, ce sont d'abord ses membres.",
     ],
     example:
       "On peut demander à la salle : « Qui a déjà vécu un changement dans un stage, un emploi ou même ici, à l'école ? » — cela ancre le sujet dans l'expérience.",

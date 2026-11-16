@@ -22,10 +22,10 @@ const LEVEL_COLORS = ['#ffb86b', '#a98bff', '#45e0ff'];
 function buildOrganisation() {
   const nodes: OrgNode[] = [];
   nodes.push({ chart: new THREE.Vector3(0, 2.0, 0), team: new THREE.Vector3(), parent: -1, level: 0 });
-  const l1x = [-2.5, -0.84, 0.84, 2.5];
+  const l1x = [-2.3, -0.77, 0.77, 2.3];
   l1x.forEach((x) => nodes.push({ chart: new THREE.Vector3(x, 0.4, 0), team: new THREE.Vector3(), parent: 0, level: 1 }));
   l1x.forEach((x, p) =>
-    [-0.5, 0, 0.5].forEach((dx) =>
+    [-0.46, 0, 0.46].forEach((dx) =>
       nodes.push({ chart: new THREE.Vector3(x + dx, -1.2, 0), team: new THREE.Vector3(), parent: p + 1, level: 2 }),
     ),
   );
@@ -183,7 +183,7 @@ export function ChangeScene({ step }: SceneProps) {
   });
 
   return (
-    <group position={[4.05, 0.1, 0]}>
+    <group position={[3.85, 0.1, 0]}>
       <Glow color="#2b5cff" size={7} opacity={0.2} />
       <group ref={structure}>
         <instancedMesh ref={cards} args={[cardGeo, cardMat, count]} frustumCulled={false} />
