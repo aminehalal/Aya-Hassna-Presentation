@@ -14,6 +14,7 @@ import { createSyncChannel, openPresenterWindow } from '../../lib/sync';
 import { slideComponents } from '../../slides';
 import { SceneErrorBoundary, SceneFallback } from '../3d/SceneFallback';
 import { usePresentation } from './PresentationContext';
+import { DeviceNotice } from './DeviceNotice';
 import { PresenterNotes } from './PresenterNotes';
 import { ProgressIndicator } from './ProgressIndicator';
 import { ShortcutsHelp } from './ShortcutsHelp';
@@ -279,6 +280,7 @@ export function PresentationEngine() {
       />
       <PresenterNotes open={notesOpen} onClose={() => setNotesOpen(false)} onOpenPresenter={openPresenterWindow} />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <DeviceNotice />
 
       {/* Black screen (B) — classic presenter pause */}
       <AnimatePresence>
