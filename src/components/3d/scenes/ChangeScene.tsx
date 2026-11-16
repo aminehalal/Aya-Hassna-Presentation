@@ -2,41 +2,55 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useSceneSettings, type SceneProps } from '../sceneSettings';
-import { fibonacciSphere, seededRandom, smooth, useDisposable, useTweenedValue } from '../utils';
+import { seededRandom, smooth, useDisposable, useTweenedValue } from '../utils';
 import { Glow, makeGlowPointsMaterial, makeLineMaterial } from './common';
+import { CHEST, People, type PeopleHandle } from './symbols';
 
 interface OrgNode {
-  rigid: THREE.Vector3;
-  network: THREE.Vector3;
+  /** Centre of the org-chart box */
+  chart: THREE.Vector3;
+  /** Feet position in the network (team) configuration */
+  team: THREE.Vector3;
   parent: number;
+  level: number;
 }
 
-/** A classic pyramid org-chart (1 → 4 → 12) and its re-arrangement as a network. */
+const FLOOR_Y = -1.45;
+const LEVEL_COLORS = ['#ffb86b', '#a98bff', '#45e0ff'];
+
+/** A classic org chart (1 director → 4 managers → 12 employees) and the same people as a team network. */
 function buildOrganisation() {
   const nodes: OrgNode[] = [];
-  nodes.push({ rigid: new THREE.Vector3(0, 2.1, 0), network: new THREE.Vector3(), parent: -1 });
-  const l1x = [-2.7, -0.9, 0.9, 2.7];
-  l1x.forEach((x) => nodes.push({ rigid: new THREE.Vector3(x, 0.45, 0), network: new THREE.Vector3(), parent: 0 }));
+  nodes.push({ chart: new THREE.Vector3(0, 2.0, 0), team: new THREE.Vector3(), parent: -1, level: 0 });
+  const l1x = [-2.5, -0.84, 0.84, 2.5];
+  l1x.forEach((x) => nodes.push({ chart: new THREE.Vector3(x, 0.4, 0), team: new THREE.Vector3(), parent: 0, level: 1 }));
   l1x.forEach((x, p) =>
     [-0.5, 0, 0.5].forEach((dx) =>
-      nodes.push({ rigid: new THREE.Vector3(x + dx, -1.35, 0), network: new THREE.Vector3(), parent: p + 1 }),
+      nodes.push({ chart: new THREE.Vector3(x + dx, -1.2, 0), team: new THREE.Vector3(), parent: p + 1, level: 2 }),
     ),
   );
+  // Network: everyone stands in two concentric circles, no top or bottom
   const rand = seededRandom(5);
-  const sphere = fibonacciSphere(nodes.length, 2.2);
-  nodes.forEach((n, i) => n.network.copy(sphere[i]).multiplyScalar(0.85 + rand() * 0.3));
-
-  // Lateral links that only exist in the network form (nearest neighbours)
+  const inner = 6;
+  nodes.forEach((n, i) => {
+    const ring = i < inner ? 0 : 1;
+    const k = ring === 0 ? i : i - inner;
+    const count = ring === 0 ? inner : nodes.length - inner;
+    const a = (k / count) * Math.PI * 2 + ring * 0.3;
+    const r = ring === 0 ? 1.05 : 2.15;
+    n.team.set(Math.cos(a) * r + (rand() - 0.5) * 0.12, FLOOR_Y, Math.sin(a) * r * 0.85);
+  });
+  // Lateral links (colleagues who now cooperate directly): nearest neighbours in the team
   const lateral: [number, number][] = [];
   nodes.forEach((n, i) => {
-    const nearest = nodes
-      .map((m, j) => ({ j, d: n.network.distanceTo(m.network) }))
+    nodes
+      .map((m, j) => ({ j, d: n.team.distanceTo(m.team) }))
       .filter(({ j }) => j !== i)
       .sort((a, b) => a.d - b.d)
-      .slice(0, 3);
-    nearest.forEach(({ j }) => {
-      if (!lateral.some(([a, b]) => (a === i && b === j) || (a === j && b === i))) lateral.push([i, j]);
-    });
+      .slice(0, 3)
+      .forEach(({ j }) => {
+        if (!lateral.some(([a, b]) => (a === i && b === j) || (a === j && b === i))) lateral.push([i, j]);
+      });
   });
   return { nodes, lateral };
 }
@@ -44,34 +58,37 @@ function buildOrganisation() {
 const FORCE_COUNT = 260;
 
 /**
- * Scene 03 — "De la hiérarchie au réseau": a rigid org-chart, pressed by
- * external forces, physically transforms into a flexible network.
+ * Scene 03 — "Du schéma hiérarchique à l'équipe": the people of a classic
+ * org chart, each in their box, are pressed by external forces; then the
+ * boxes dissolve and the same people step down into a circle where everyone
+ * works with everyone — a flexible, networked organisation.
  */
 export function ChangeScene({ step }: SceneProps) {
   const { reducedMotion } = useSceneSettings();
   const { nodes, lateral } = useMemo(buildOrganisation, []);
   const count = nodes.length;
-  const boxes = useRef<THREE.InstancedMesh>(null);
-  const gems = useRef<THREE.InstancedMesh>(null);
+  const cards = useRef<THREE.InstancedMesh>(null);
+  const people = useRef<PeopleHandle>(null);
   const structure = useRef<THREE.Group>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const positions = useMemo(() => nodes.map(() => new THREE.Vector3()), [nodes]);
+  const feet = useMemo(() => nodes.map(() => new THREE.Vector3()), [nodes]);
+  const grey = useMemo(() => new THREE.Color('#8794b4'), []);
+  const tint = useMemo(() => new THREE.Color(), []);
+  const levelColors = useMemo(() => LEVEL_COLORS.map((c) => new THREE.Color(c)), []);
+  const floorMat = useRef<THREE.MeshBasicMaterial>(null);
 
   const morph = useTweenedValue(step >= 2 ? 1 : 0, { duration: 2.4, ease: 'power2.inOut' });
   const forces = useTweenedValue(step === 1 ? 1 : step > 1 ? 0.35 : 0, { duration: 1.2 });
 
-  const [boxGeo, gemGeo] = useDisposable(() => [new THREE.BoxGeometry(0.36, 0.3, 0.3), new THREE.IcosahedronGeometry(0.2, 1)]);
-  const [boxMat, gemMat] = useDisposable(() => [
-    new THREE.MeshStandardMaterial({ color: '#7f8fb8', emissive: '#1d2a55', metalness: 0.5, roughness: 0.4, transparent: true }),
-    new THREE.MeshStandardMaterial({ color: '#bfefff', emissive: '#19b8ff', emissiveIntensity: 0.9, roughness: 0.25, transparent: true }),
-  ]);
-  const [treeMat, lateralMat, glowMat, forceMat] = useDisposable(() => [
+  const cardGeo = useDisposable(() => new THREE.BoxGeometry(0.5, 0.66, 0.05));
+  const cardMat = useDisposable(
+    () => new THREE.MeshStandardMaterial({ color: '#1d2a55', emissive: '#2a4aa8', emissiveIntensity: 0.35, metalness: 0.4, roughness: 0.4, transparent: true }),
+  );
+  const [treeMat, lateralMat, forceMat] = useDisposable(() => [
     makeLineMaterial('#8aa4e0', 0.6),
     makeLineMaterial('#45e0ff', 0),
-    makeGlowPointsMaterial(0.55, 0, '#5fd8ff', false),
     makeGlowPointsMaterial(0.16, 0, '#ffb86b', false),
   ]);
-
   const treeGeo = useDisposable(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array((count - 1) * 6), 3));
@@ -82,13 +99,9 @@ export function ChangeScene({ step }: SceneProps) {
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(lateral.length * 6), 3));
     return g;
   });
-  const glowGeo = useDisposable(() => {
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-    return g;
-  });
+  const floorGeo = useDisposable(() => new THREE.RingGeometry(2.45, 2.5, 96));
 
-  // External forces: particles converging on the structure from every direction
+  // External forces: particles converging on the organisation from every direction
   const forceData = useMemo(() => {
     const rand = seededRandom(31);
     return Array.from({ length: FORCE_COUNT }, () => ({
@@ -108,58 +121,54 @@ export function ChangeScene({ step }: SceneProps) {
     const t = state.clock.elapsedTime * speed;
     const m = smooth(morph.value);
     const f = forces.value;
-
+    // Each person leaves their box with a slight delay (top of the hierarchy first)
     for (let i = 0; i < count; i++) {
       const n = nodes[i];
-      const p = positions[i].copy(n.rigid).lerp(n.network, m);
-      // The network breathes; the hierarchy does not.
-      p.x += Math.sin(t * 0.9 + i) * 0.08 * m;
-      p.y += Math.cos(t * 0.7 + i * 1.3) * 0.08 * m;
-      // Internal pressure: the hierarchy vibrates while forces apply
+      const k = smooth(m * 1.35 - n.level * 0.15);
+      const chartFeet = n.chart.y - 0.28;
+      const p = feet[i].set(
+        THREE.MathUtils.lerp(n.chart.x, n.team.x, k),
+        THREE.MathUtils.lerp(chartFeet, n.team.y, k) + Math.sin(k * Math.PI) * 0.35,
+        THREE.MathUtils.lerp(0.06, n.team.z, k),
+      );
+      // Pressure: the hierarchy trembles while external forces apply
       p.x += Math.sin(t * 22 + i) * 0.012 * f * (1 - m);
-    }
+      const face = k > 0.5 ? Math.atan2(-n.team.x, -n.team.z) * k : 0;
+      people.current?.set(i, p.x, p.y, p.z, 0.78 + k * 0.12, face);
+      tint.copy(grey).lerp(levelColors[n.level], k);
+      people.current?.color(i, tint);
 
-    const pulse = 1 + f * 0.12 * Math.max(0, Math.sin(t * 3));
-    for (let i = 0; i < count; i++) {
-      dummy.position.copy(positions[i]);
-      dummy.rotation.set(0, 0, 0);
-      dummy.scale.setScalar((1 - m * 0.9) * pulse);
+      dummy.position.copy(n.chart);
+      dummy.scale.setScalar(Math.max(0.0001, 1 - m * 1.3));
       dummy.updateMatrix();
-      boxes.current?.setMatrixAt(i, dummy.matrix);
-      dummy.rotation.set(t * 0.5 + i, t * 0.3, 0);
-      dummy.scale.setScalar(0.2 + m * 0.8);
-      dummy.updateMatrix();
-      gems.current?.setMatrixAt(i, dummy.matrix);
+      cards.current?.setMatrixAt(i, dummy.matrix);
     }
-    if (boxes.current) boxes.current.instanceMatrix.needsUpdate = true;
-    if (gems.current) gems.current.instanceMatrix.needsUpdate = true;
-    boxMat.opacity = 1 - m;
-    gemMat.opacity = m;
+    people.current?.commit();
+    if (cards.current) cards.current.instanceMatrix.needsUpdate = true;
+    cardMat.opacity = 1 - m;
+    if (people.current) people.current.material.emissiveIntensity = 0.22 + m * 0.3;
 
+    // Reporting lines (top-down) follow the people; colleague links appear in the team
     const tree = treeGeo.attributes.position.array as Float32Array;
     for (let i = 1; i < count; i++) {
-      const a = positions[i];
-      const b = positions[nodes[i].parent];
-      tree.set([a.x, a.y, a.z, b.x, b.y, b.z], (i - 1) * 6);
+      const a = feet[i];
+      const b = feet[nodes[i].parent];
+      const ya = THREE.MathUtils.lerp(a.y + 0.62, a.y + CHEST, m);
+      const yb = THREE.MathUtils.lerp(b.y - 0.05, b.y + CHEST, m);
+      tree.set([a.x, ya, a.z, b.x, yb, b.z], (i - 1) * 6);
     }
     treeGeo.attributes.position.needsUpdate = true;
     treeGeo.computeBoundingSphere();
-    treeMat.color.setRGB(0.54 - 0.27 * m, 0.64 + 0.24 * m, 0.88 + 0.12 * m);
+    treeMat.opacity = 0.6 - m * 0.35;
 
     const lat = lateralGeo.attributes.position.array as Float32Array;
     lateral.forEach(([a, b], k) => {
-      const pa = positions[a];
-      const pb = positions[b];
-      lat.set([pa.x, pa.y, pa.z, pb.x, pb.y, pb.z], k * 6);
+      lat.set([feet[a].x, feet[a].y + CHEST, feet[a].z, feet[b].x, feet[b].y + CHEST, feet[b].z], k * 6);
     });
     lateralGeo.attributes.position.needsUpdate = true;
     lateralGeo.computeBoundingSphere();
-    lateralMat.opacity = m * 0.55;
-
-    const glow = glowGeo.attributes.position.array as Float32Array;
-    positions.forEach((p, i) => glow.set([p.x, p.y, p.z], i * 3));
-    glowGeo.attributes.position.needsUpdate = true;
-    glowMat.opacity = m * 0.85;
+    lateralMat.opacity = m * 0.6;
+    if (floorMat.current) floorMat.current.opacity = m * 0.35;
 
     const fp = forceGeo.attributes.position.array as Float32Array;
     forceData.forEach((d, i) => {
@@ -170,18 +179,20 @@ export function ChangeScene({ step }: SceneProps) {
     forceGeo.attributes.position.needsUpdate = true;
     forceMat.opacity = f * 0.9;
 
-    if (structure.current) structure.current.rotation.y = Math.sin(t * 0.25) * 0.35 * m;
+    if (structure.current) structure.current.rotation.y = Math.sin(t * 0.25) * 0.25 * m;
   });
 
   return (
-    <group position={[3.7, 0.1, 0]}>
-      <Glow color="#2b5cff" size={7} opacity={0.22} />
+    <group position={[4.05, 0.1, 0]}>
+      <Glow color="#2b5cff" size={7} opacity={0.2} />
       <group ref={structure}>
-        <instancedMesh ref={boxes} args={[boxGeo, boxMat, count]} frustumCulled={false} />
-        <instancedMesh ref={gems} args={[gemGeo, gemMat, count]} frustumCulled={false} />
+        <instancedMesh ref={cards} args={[cardGeo, cardMat, count]} frustumCulled={false} />
+        <People ref={people} count={count} emissiveIntensity={0.22} />
         <lineSegments geometry={treeGeo} material={treeMat} />
         <lineSegments geometry={lateralGeo} material={lateralMat} />
-        <points geometry={glowGeo} material={glowMat} frustumCulled={false} />
+        <mesh geometry={floorGeo} position={[0, FLOOR_Y, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.85, 1]}>
+          <meshBasicMaterial ref={floorMat} color="#45e0ff" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
       </group>
       <points geometry={forceGeo} material={forceMat} frustumCulled={false} />
     </group>

@@ -9,8 +9,10 @@ export const presentationInfo = {
   shortTitle: "Le changement, l'innovation et l'apprentissage",
   subtitle: "Comprendre comment les organisations évoluent, s'adaptent et se transforment.",
   module: 'Sociologie des organisations',
-  institution: 'École Supérieure de Technologie (EST)',
-  institutionShort: 'EST',
+  institution: 'École Supérieure de Technologie de Salé',
+  institutionShort: 'EST Salé',
+  /** Official logo, served from public/. Drop the file there; nothing is shown while it is missing. */
+  logo: '/logo-est-sale.png',
   field: 'Ressources Humaines',
   country: 'Maroc',
   academicYear: 'Année universitaire 2026 – 2027',
@@ -29,6 +31,7 @@ export const slides: SlideMeta[] = [
     overview: 'Un noyau lumineux sort de l’obscurité.',
     accent: '#7b8cff',
     steps: 2,
+    soundCues: { 1: { duration: 1.8 } },
     camera: [
       { position: [0, 0, 17], target: [0, 0, 0] },
       { position: [-4.3, 0.25, 12.6], target: [-4.3, 0, 0] },
@@ -41,6 +44,7 @@ export const slides: SlideMeta[] = [
     overview: 'Deux mondes : l’un figé, l’autre en mouvement.',
     accent: '#45e0ff',
     steps: 2,
+    soundCues: { 1: { duration: 1.6 } },
     camera: [
       { position: [0, 0.4, 12.5], target: [0, -0.6, 0] },
       { position: [0, 0.2, 11.5], target: [0, -0.6, 0] },
@@ -53,10 +57,11 @@ export const slides: SlideMeta[] = [
     overview: 'Une hiérarchie rigide devient un réseau souple.',
     accent: '#4f8cff',
     steps: 3,
+    soundCues: { 1: { duration: 1.2 }, 2: { duration: 2.4 } },
     camera: [
       { position: [0, 0.2, 11], target: [0, 0, 0] },
       { position: [0.4, 0.4, 11.5], target: [0, 0, 0] },
-      { position: [0.8, 1, 10.4], target: [0.2, 0, 0] },
+      { position: [0.8, 2.9, 10.6], target: [0.4, -0.5, 0] },
     ],
   },
   {
@@ -66,6 +71,7 @@ export const slides: SlideMeta[] = [
     overview: 'Trois strates : individu, groupe, organisation.',
     accent: '#6aa8ff',
     steps: 5,
+    soundCues: { 1: { duration: 1.4 }, 2: { duration: 1.4 }, 3: { duration: 2.6, hits: [0.05, 1.3, 2.6] }, 4: { duration: 2.2 } },
     camera: [
       { position: [0, 3.2, 11], target: [0, 0, 0] },
       { position: [0, 3.2, 11], target: [0, 0, 0] },
@@ -81,6 +87,7 @@ export const slides: SlideMeta[] = [
     overview: 'Un flux de transformation bute sur des barrières.',
     accent: '#ff8a6b',
     steps: 2,
+    soundCues: { 1: { duration: 2.6, hits: [0.5, 0.72, 0.94, 1.16, 1.38] } },
     camera: [
       { position: [0, 0, 11], target: [0, 0, 0] },
       { position: [0, 0, 11], target: [0, 0, 0] },
@@ -93,6 +100,7 @@ export const slides: SlideMeta[] = [
     overview: 'Des idées dispersées se relient en une structure.',
     accent: '#a98bff',
     steps: 3,
+    soundCues: { 1: { duration: 1.6 }, 2: { duration: 2.6 } },
     camera: [
       { position: [0, 0, 11.5], target: [0, 0, 0] },
       { position: [0.3, 0.3, 11], target: [0, 0, 0] },
@@ -106,6 +114,7 @@ export const slides: SlideMeta[] = [
     overview: 'Une organisation-système, irriguée par l’innovation.',
     accent: '#8f7bff',
     steps: 2,
+    soundCues: { 1: { duration: 1.4 } },
     camera: [
       { position: [0, 4.6, 10.4], target: [0, -0.2, 0] },
       { position: [0.8, 5.2, 10.8], target: [0.5, -0.4, 0] },
@@ -118,6 +127,7 @@ export const slides: SlideMeta[] = [
     overview: 'Un arbre de savoirs qui pousse et se ramifie.',
     accent: '#3fe0c5',
     steps: 5,
+    soundCues: { 1: { duration: 2.6 }, 2: { duration: 2.6 }, 3: { duration: 1.4 }, 4: { duration: 1.8 } },
     camera: [
       { position: [0, -0.6, 10.5], target: [0, -0.8, 0] },
       { position: [0, 0, 11.2], target: [0, 0, 0] },
@@ -133,6 +143,7 @@ export const slides: SlideMeta[] = [
     overview: 'Les cinq disciplines de Peter Senge.',
     accent: '#45e0ff',
     steps: 3,
+    soundCues: { 1: { duration: 1.4 }, 2: { duration: 1.6 } },
     camera: [
       { position: [0, 0, 12], target: [0, 0, 0] },
       { position: [0.4, 0.6, 11], target: [0.2, 0, 0] },
@@ -146,6 +157,7 @@ export const slides: SlideMeta[] = [
     overview: 'Trois structures se relient en un écosystème.',
     accent: '#7ad7ff',
     steps: 5,
+    soundCues: { 1: { duration: 1.6 }, 2: { duration: 1.6 }, 3: { duration: 1.6 }, 4: { duration: 3, hits: [0.05, 1, 2, 3] } },
     camera: [
       { position: [0, 1.2, 12], target: [0, 0, 0] },
       { position: [0.4, 1.4, 11.5], target: [0, 0, 0] },
@@ -161,6 +173,7 @@ export const slides: SlideMeta[] = [
     overview: 'Un zellige qui se transforme en réseau numérique.',
     accent: '#ffb86b',
     steps: 2,
+    soundCues: { 1: { duration: 2.4 } },
     camera: [
       { position: [0, 3, 10.5], target: [0, -0.8, 0] },
       { position: [1.2, 4.2, 9.4], target: [0.6, -1, 0] },
@@ -173,6 +186,7 @@ export const slides: SlideMeta[] = [
     overview: 'Tous les éléments convergent en une seule harmonie.',
     accent: '#9fb6ff',
     steps: 3,
+    soundCues: { 1: { duration: 1.8 }, 2: { duration: 2.4, hits: [0.05, 0.8, 1.6, 2.4] } },
     camera: [
       { position: [0, 0.2, 11.5], target: [0, 0, 0] },
       { position: [0, 0.4, 12.5], target: [0, 0.2, 0] },

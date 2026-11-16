@@ -5,6 +5,9 @@ import { slides } from '../../content/presentation';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { useIdle } from '../../hooks/useIdle';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useSoundEnabled, useTransitionSound } from '../../hooks/useSound';
+import { useTheme } from '../../hooks/useTheme';
+import { sound } from '../../lib/sound';
 import { STAGE_HEIGHT, STAGE_WIDTH, useStageScale } from '../../hooks/useStageScale';
 import { useWebGLSupport } from '../../hooks/useWebGLSupport';
 import { createSyncChannel, openPresenterWindow } from '../../lib/sync';
@@ -27,6 +30,9 @@ export function PresentationEngine() {
   const webgl = useWebGLSupport();
   const idle = useIdle();
   const fullscreen = useFullscreen();
+  const soundEnabled = useSoundEnabled();
+  const { theme, toggle: toggleTheme } = useTheme();
+  useTransitionSound(index, step, direction);
 
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [overviewSelected, setOverviewSelected] = useState(index);
@@ -56,6 +62,7 @@ export function PresentationEngine() {
 
   /* ---------------- overlays ---------------- */
   const toggleOverview = useCallback(() => {
+    sound.tick();
     setOverviewOpen((open) => {
       if (!open) setOverviewSelected(navRef.current.index);
       return !open;
@@ -164,7 +171,19 @@ export function PresentationEngine() {
         case 'n':
         case 'N':
           e.preventDefault();
+          sound.tick();
           setNotesOpen((v) => !v);
+          break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          sound.toggle();
+          break;
+        case 't':
+        case 'T':
+          e.preventDefault();
+          sound.tick();
+          toggleTheme();
           break;
         case 'p':
         case 'P':
@@ -187,7 +206,7 @@ export function PresentationEngine() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [overviewOpen, overviewSelected, blackout, helpOpen, notesOpen, next, prev, goTo, total, fullscreen, toggleOverview, selectFromOverview]);
+  }, [overviewOpen, overviewSelected, blackout, helpOpen, notesOpen, next, prev, goTo, total, fullscreen, toggleOverview, selectFromOverview, toggleTheme]);
 
   const SlideComponent = slideComponents[slide.id];
   const fallback = <SceneFallback accent={slide.accent} />;
@@ -243,6 +262,10 @@ export function PresentationEngine() {
           onToggleHelp={() => setHelpOpen((v) => !v)}
           onToggleFullscreen={fullscreen.toggle}
           onOpenPresenter={openPresenterWindow}
+          soundEnabled={soundEnabled}
+          onToggleSound={() => sound.toggle()}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <ProgressIndicator dimmed={idle} />
       </div>
@@ -261,7 +284,7 @@ export function PresentationEngine() {
       <AnimatePresence>
         {blackout && (
           <motion.div
-            className="fixed inset-0 z-[60] bg-black"
+            className="theme-keep fixed inset-0 z-[60] bg-black"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

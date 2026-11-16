@@ -1,23 +1,28 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { focusStore } from '../../../lib/focusStore';
 import { useSceneSettings, type SceneProps } from '../sceneSettings';
-import { fibonacciSphere, seededRandom, useDisposable, useTweenedValue } from '../utils';
-import { Glow, makeGlowPointsMaterial, makeLineMaterial, setPointer } from './common';
+import { useDisposable, useTweenedValue } from '../utils';
+import { Glow, makeLineMaterial, setPointer } from './common';
+import { CHEST, People, type PeopleHandle } from './symbols';
 
 const ORB_COLORS = ['#4f8cff', '#a98bff', '#ffb86b', '#3fe0c5'];
 const ORBIT = 2.05;
-const NETWORK_NODES = 120;
+const PEOPLE = 16;
+const FLOOR_Y = -2.55;
+const PEOPLE_COLORS = ['#4f8cff', '#a98bff', '#ffb86b', '#3fe0c5'];
 
 /**
- * Scene 09 — "Les cinq disciplines": a knowledge network surrounds four
+ * Scene 09 — "Les cinq disciplines": the people of a learning organisation
+ * stand in a circle beneath four
  * discipline orbs; the fifth — systems thinking — sits at the centre and,
  * once lit, connects every other discipline into one system (Senge).
  */
 export function LearningOrgScene({ step }: SceneProps) {
   const { reducedMotion } = useSceneSettings();
   const network = useRef<THREE.Group>(null);
+  const people = useRef<PeopleHandle>(null);
   const formation = useRef<THREE.Group>(null);
   const orbRefs = useRef<(THREE.Group | null)[]>([]);
   const centre = useRef<THREE.Group>(null);
@@ -36,23 +41,33 @@ export function LearningOrgScene({ step }: SceneProps) {
     [],
   );
 
-  const { netGeo, netLinkGeo } = useMemo(() => {
-    const rand = seededRandom(19);
-    const pts = fibonacciSphere(NETWORK_NODES, 3.3).map((p) => p.multiplyScalar(0.85 + rand() * 0.3));
-    const links: number[] = [];
-    pts.forEach((p, i) => {
-      pts
-        .map((q, j) => ({ j, d: p.distanceTo(q) }))
-        .filter(({ j }) => j > i)
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 2)
-        .forEach(({ j }) => links.push(p.x, p.y, p.z, pts[j].x, pts[j].y, pts[j].z));
+  // The learning organisation itself: people in a circle beneath the disciplines,
+  // linked to their neighbours (team learning) and, with systems thinking, to the centre.
+  const seats = useMemo(
+    () =>
+      Array.from({ length: PEOPLE }, (_, i) => {
+        const a = (i / PEOPLE) * Math.PI * 2;
+        return new THREE.Vector3(Math.cos(a) * 3.0, FLOOR_Y, Math.sin(a) * 1.5);
+      }),
+    [],
+  );
+  const netLinkGeo = useDisposable(() => {
+    const pts: number[] = [];
+    seats.forEach((p, i) => {
+      const q = seats[(i + 1) % PEOPLE];
+      pts.push(p.x, p.y + CHEST, p.z, q.x, q.y + CHEST, q.z);
     });
-    const linkGeo = new THREE.BufferGeometry();
-    linkGeo.setAttribute('position', new THREE.Float32BufferAttribute(links, 3));
-    return { netGeo: new THREE.BufferGeometry().setFromPoints(pts), netLinkGeo: linkGeo };
-  }, []);
-  useDisposable(() => [netGeo, netLinkGeo], [netGeo, netLinkGeo]);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    return g;
+  });
+  const riseGeo = useDisposable(() => {
+    const pts: number[] = [];
+    seats.forEach((p) => pts.push(p.x, p.y + CHEST + 0.1, p.z, 0, 0, 0));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    return g;
+  });
 
   const beamGeo = useDisposable(() => {
     const pts: number[] = [];
@@ -65,8 +80,8 @@ export function LearningOrgScene({ step }: SceneProps) {
     g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     return g;
   });
-  const [netMat, netLinkMat, beamMat] = useDisposable(() => [
-    makeGlowPointsMaterial(0.2, 0.75, '#7fe3ff', false),
+  const [riseMat, netLinkMat, beamMat] = useDisposable(() => [
+    makeLineMaterial('#9ff0ff', 0),
     makeLineMaterial('#4a8dff', 0.16),
     makeLineMaterial('#bff3ff', 0),
   ]);
@@ -85,6 +100,14 @@ export function LearningOrgScene({ step }: SceneProps) {
     makeLineMaterial('#9ff0ff', 0.2),
   ]);
 
+  useLayoutEffect(() => {
+    seats.forEach((p, i) => {
+      people.current?.set(i, p.x, p.y, p.z, 0.95, Math.atan2(-p.x, -p.z));
+      people.current?.color(i, PEOPLE_COLORS[i % PEOPLE_COLORS.length]);
+    });
+    people.current?.commit();
+  }, [seats]);
+
   useFrame((state, dt) => {
     const speed = reducedMotion ? 0.3 : 1;
     const t = state.clock.elapsedTime * speed;
@@ -92,10 +115,7 @@ export function LearningOrgScene({ step }: SceneProps) {
     const s = systems.value;
     const focused = focusStore.get();
 
-    if (network.current) {
-      network.current.rotation.y += dt * 0.04 * speed;
-      network.current.rotation.x = Math.sin(t * 0.1) * 0.1;
-    }
+    if (network.current) network.current.rotation.y = Math.sin(t * 0.15) * 0.25;
     if (formation.current) formation.current.rotation.z = Math.sin(t * 0.2) * 0.08 + s * t * 0.05;
 
     orbRefs.current.forEach((g, i) => {
@@ -114,7 +134,9 @@ export function LearningOrgScene({ step }: SceneProps) {
     centreMat.emissiveIntensity = 0.15 + s * 1.4 + hc;
     centreLineMat.opacity = 0.2 + s * 0.6;
     beamMat.opacity = s * 0.7;
-    netLinkMat.opacity = 0.12 + s * 0.12;
+    netLinkMat.opacity = 0.25 + d * 0.25;
+    riseMat.opacity = s * 0.3;
+    if (people.current) people.current.material.emissiveIntensity = 0.3 + d * 0.2 + s * 0.2;
 
     if (pulseGroup.current) {
       pulseGroup.current.visible = s > 0.02;
@@ -143,8 +165,13 @@ export function LearningOrgScene({ step }: SceneProps) {
   return (
     <group position={[3.6, 0.1, 0]}>
       <group ref={network}>
-        <points geometry={netGeo} material={netMat} />
+        <mesh position={[0, FLOOR_Y, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.5, 1]}>
+          <ringGeometry args={[2.9, 2.95, 96]} />
+          <meshBasicMaterial color="#45e0ff" transparent opacity={0.35} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        <People ref={people} count={PEOPLE} />
         <lineSegments geometry={netLinkGeo} material={netLinkMat} />
+        <lineSegments geometry={riseGeo} material={riseMat} />
       </group>
 
       <group ref={formation}>

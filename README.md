@@ -1,6 +1,6 @@
 # Le changement, l'innovation et l'apprentissage dans les organisations
 
-Présentation immersive en 3D — **Sociologie des organisations**, École Supérieure de Technologie (EST), filière Ressources Humaines.
+Présentation immersive en 3D — **Sociologie des organisations**, École Supérieure de Technologie de Salé (EST Salé), filière Ressources Humaines.
 Conçue et présentée par **Aya Yakoubi** et **Hassna Elhaddajy**.
 
 React + TypeScript · Vite · Three.js / React Three Fiber / Drei · GSAP · Motion · Tailwind CSS · Lucide.
@@ -29,11 +29,17 @@ Servez-le avec `npm run preview` (ou n'importe quel serveur statique) plutôt qu
 | `P` | Vue présentateur dans une fenêtre séparée (synchronisée) |
 | `F` | Plein écran |
 | `B` | Écran noir |
+| `M` | Activer / couper le son |
+| `T` | Mode clair / sombre (mémorisé) |
 | `H` / `?` | Aide |
 
 Les télécommandes de présentation (Page ↑ / Page ↓) fonctionnent. Les diapositives n'avancent jamais toutes seules.
 
 **Conseil projecteur :** en écran *étendu*, ouvrez la vue présentateur (`P`) sur l'ordinateur et placez la présentation en plein écran (`F`) sur le projecteur. En écran *dupliqué*, le panneau de notes (`N`) serait visible du public.
+
+**Son :** les transitions sont sonorisées (souffle entre les diapositives, carillon à chaque révélation), générées en direct par le navigateur, sans fichier audio. Les navigateurs n'autorisent le son qu'après une première action : appuyez sur une touche ou cliquez une fois avant de commencer. Seule la fenêtre active joue le son (jamais en double avec la vue présentateur).
+
+**Logo :** placez le logo officiel dans `public/logo-est-sale.png`. Il s'affiche sur l'ouverture et l'écran de questions ; tant que le fichier est absent, rien n'est affiché.
 
 Chaque position a une adresse : `#/5/2` = diapositive 5, étape 2.
 Ajoutez `?3d=off` à l'adresse pour forcer le mode léger sans 3D.

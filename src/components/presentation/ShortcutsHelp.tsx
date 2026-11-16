@@ -8,6 +8,8 @@ const shortcuts: [string[], string][] = [
   [['N'], 'Notes de présentation'],
   [['P'], 'Vue présentateur (fenêtre séparée)'],
   [['F'], 'Plein écran'],
+  [['M'], 'Activer / couper le son'],
+  [['T'], 'Mode clair / sombre'],
   [['B'], 'Écran noir (pause)'],
   [['H', '?'], 'Afficher / masquer cette aide'],
 ];

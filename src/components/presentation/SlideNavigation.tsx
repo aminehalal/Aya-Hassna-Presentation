@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, CircleHelp, LayoutGrid, MonitorUp, NotebookPen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleHelp, LayoutGrid, Moon, MonitorUp, NotebookPen, Sun, Volume2, VolumeX } from 'lucide-react';
 import { NavigationButton } from '../ui/NavigationButton';
 import { FullscreenControl } from './FullscreenControl';
 import { SlideCounter } from './ProgressIndicator';
@@ -16,6 +16,10 @@ interface SlideNavigationProps {
   onToggleHelp: () => void;
   onToggleFullscreen: () => void;
   onOpenPresenter: () => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
 }
 
 /** On-screen controls. They fade out when the pointer is idle so the audience sees only the slide. */
@@ -41,6 +45,21 @@ export function SlideNavigation(props: SlideNavigationProps) {
         </NavigationButton>
         <NavigationButton label="Vue présentateur (fenêtre séparée)" shortcut="P" onClick={props.onOpenPresenter}>
           <MonitorUp size={19} />
+        </NavigationButton>
+        <NavigationButton
+          label={props.soundEnabled ? 'Couper le son' : 'Activer le son'}
+          shortcut="M"
+          onClick={props.onToggleSound}
+          active={props.soundEnabled}
+        >
+          {props.soundEnabled ? <Volume2 size={19} /> : <VolumeX size={19} />}
+        </NavigationButton>
+        <NavigationButton
+          label={props.theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+          shortcut="T"
+          onClick={props.onToggleTheme}
+        >
+          {props.theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
         </NavigationButton>
         <FullscreenControl
           isFullscreen={props.isFullscreen}

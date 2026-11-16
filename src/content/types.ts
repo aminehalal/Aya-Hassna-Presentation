@@ -35,6 +35,11 @@ export interface SlideMeta {
   steps: number;
   /** Optional per-step camera choreography (index = step, clamped) */
   camera?: CameraPose[];
+  /**
+   * Sound cues synchronised with the 3D animation triggered by each step
+   * (key = step reached going forward). Duration = the animation's duration.
+   */
+  soundCues?: Record<number, { duration: number; hits?: number[] }>;
 }
 
 export interface LabeledText {

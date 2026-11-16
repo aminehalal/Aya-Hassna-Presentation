@@ -1,9 +1,10 @@
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useSceneSettings, type SceneProps } from '../sceneSettings';
 import { smooth, useDisposable, useTweenedValue } from '../utils';
 import { Glow, makeLineMaterial } from './common';
+import { CHEST, People, type PeopleHandle } from './symbols';
 
 interface Layer {
   y: number;
@@ -26,10 +27,12 @@ const LAYERS: Layer[] = [
 ];
 
 const WARM = new THREE.Color('#ffb86b');
+/** Person size on each layer (individual, group, organisation) */
+const PERSON_SCALE = [1.1, 0.72, 0.5];
 
 /**
- * Scene 04 — "Les strates": individual, group and organisation as three
- * stacked layers, revealed one by one; then the two rhythms of change:
+ * Scene 04 — "Les strates": one person, a team, then the whole organisation
+ * standing on three stacked layers, revealed one by one; then the two rhythms of change:
  * small regular steps (incremental) versus a full reconfiguration
  * (transformational).
  */
@@ -64,10 +67,8 @@ export function LevelsScene({ step }: SceneProps) {
         }),
     ),
   );
-  const nodeGeo = useDisposable(() => new THREE.SphereGeometry(1, 16, 16));
-  const nodeMats = useDisposable(() =>
-    LAYERS.map((l) => new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: l.color, emissiveIntensity: 1.2, transparent: true })),
-  );
+  const peopleRefs = useRef<(PeopleHandle | null)[]>([]);
+  const layerTint = useMemo(() => new THREE.Color(), []);
   const ringMats = useDisposable(() => LAYERS.map((l) => new THREE.MeshBasicMaterial({ color: l.color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
 
   // Vertical links: the individual inside the group, the group inside the organisation
@@ -85,7 +86,18 @@ export function LevelsScene({ step }: SceneProps) {
   const tmpA = useMemo(() => new THREE.Vector3(), []);
   const tmpB = useMemo(() => new THREE.Vector3(), []);
   const linkMat = useDisposable(() => makeLineMaterial('#9fc2ff', 0));
-  const nodeScale = useMemo(() => [0.2, 0.11, 0.075], []);
+
+  // People standing on each layer: one person, a team, the whole organisation
+  useLayoutEffect(() => {
+    LAYERS.forEach((layer, i) => {
+      const handle = peopleRefs.current[i];
+      layer.nodes.forEach((n, k) => {
+        handle?.set(k, n.x, 0.03, n.z, PERSON_SCALE[i], Math.atan2(-n.x, -n.z) + Math.PI);
+        handle?.color(k, layer.color);
+      });
+      handle?.commit();
+    });
+  }, []);
 
   useFrame((state, dt) => {
     const speed = reducedMotion ? 0.3 : 1;
@@ -111,9 +123,14 @@ export function LevelsScene({ step }: SceneProps) {
       discMats[i].opacity = 0.18 * s;
       discMats[i].color.set(layer.color).lerp(WARM, T * 0.7);
       discMats[i].emissive.set(layer.color).lerp(WARM, T * 0.7);
-      nodeMats[i].opacity = s;
+      const handle = peopleRefs.current[i];
+      if (handle) {
+        handle.material.opacity = s;
+        layerTint.set(layer.color).lerp(WARM, T * 0.85);
+        layer.nodes.forEach((_, k) => handle.color(k, layerTint));
+        handle.commit();
+      }
       ringMats[i].opacity = 0.6 * s;
-      nodeMats[i].emissive.set(layer.color).lerp(WARM, T * 0.85);
       ringMats[i].color.set(layer.color).lerp(WARM, T * 0.85);
     });
     // Links follow the layers (computed in the parent space of the stack)
@@ -126,8 +143,8 @@ export function LevelsScene({ step }: SceneProps) {
       gb.updateMatrix();
       const a = LAYERS[la].nodes[na];
       const b = LAYERS[lb].nodes[nb];
-      tmpA.set(a.x, 0.08, a.z).applyMatrix4(ga.matrix);
-      tmpB.set(b.x, 0.08, b.z).applyMatrix4(gb.matrix);
+      tmpA.set(a.x, 0.03 + CHEST * PERSON_SCALE[la], a.z).applyMatrix4(ga.matrix);
+      tmpB.set(b.x, 0.03 + CHEST * PERSON_SCALE[lb], b.z).applyMatrix4(gb.matrix);
       lp.set([tmpA.x, tmpA.y, tmpA.z, tmpB.x, tmpB.y, tmpB.z], k * 6);
     });
     linkGeo.attributes.position.needsUpdate = true;
@@ -152,9 +169,7 @@ export function LevelsScene({ step }: SceneProps) {
             <mesh rotation={[Math.PI / 2, 0, 0]} material={ringMats[i]}>
               <torusGeometry args={[layer.radius, 0.016, 6, 120]} />
             </mesh>
-            {layer.nodes.map((n, k) => (
-              <mesh key={k} geometry={nodeGeo} material={nodeMats[i]} position={[n.x, 0.08, n.z]} scale={nodeScale[i]} />
-            ))}
+            <People ref={(el) => void (peopleRefs.current[i] = el)} count={layer.nodes.length} emissiveIntensity={0.45} />
           </group>
         ))}
         <lineSegments geometry={linkGeo} material={linkMat} />

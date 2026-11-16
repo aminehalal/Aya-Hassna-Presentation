@@ -1,5 +1,6 @@
 import { presentationInfo, questionsContent as c } from '../content/presentation';
 import { AnimatedText } from '../components/ui/AnimatedText';
+import { InstitutionLogo } from '../components/ui/InstitutionLogo';
 import { Reveal } from '../components/ui/Reveal';
 import type { SlideProps } from './types';
 
@@ -36,9 +37,10 @@ export function Slide14Questions(_props: SlideProps) {
             <span>{second}</span>
           </div>
           <div className="mt-5 text-[24px] text-mute">
-            {presentationInfo.institution} · {presentationInfo.module} · {presentationInfo.field}
+            {presentationInfo.module} · Filière {presentationInfo.field}
           </div>
           <div className="mt-1 text-[24px] text-mute">{presentationInfo.academicYear}</div>
+          <InstitutionLogo height={130} className="mt-7" />
         </Reveal>
       </div>
     </div>

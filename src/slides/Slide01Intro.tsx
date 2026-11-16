@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { EASE_OUT } from '../animations/motion';
 import { presentationInfo } from '../content/presentation';
 import { AnimatedText } from '../components/ui/AnimatedText';
+import { InstitutionLogo } from '../components/ui/InstitutionLogo';
 import type { SlideProps } from './types';
 
 /** Scene 01 — cinematic opening: the core alone, then the title reveal. */
@@ -13,16 +14,24 @@ export function Slide01Intro({ step }: SlideProps) {
         {step === 0 ? (
           <motion.div
             key="teaser"
-            className="absolute inset-x-0 bottom-[120px] flex flex-col items-center gap-6 text-center"
+            className="absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: { duration: 1.6, delay: 1.2 } }}
             exit={{ opacity: 0, transition: { duration: 0.5 } }}
           >
+            {/* The institution opens the presentation, above the core */}
+            <div className="absolute inset-x-0 top-[60px] flex justify-center">
+              <InstitutionLogo height={170} />
+            </div>
+            <div className="absolute inset-x-0 bottom-[120px] flex flex-col items-center gap-6 text-center">
             <div className="font-display text-[26px] uppercase tracking-[0.42em] text-mist/80">
               {presentationInfo.module}
             </div>
             <div className="h-[1px] w-40 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-            <div className="font-display text-[24px] tracking-[0.2em] text-mute">{presentationInfo.institution}</div>
+            <div className="font-display text-[24px] tracking-[0.2em] text-mute">
+              Filière {presentationInfo.field} · {presentationInfo.academicYear}
+            </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -37,15 +46,16 @@ export function Slide01Intro({ step }: SlideProps) {
               className="pointer-events-none absolute inset-0"
               style={{ background: 'linear-gradient(90deg, rgba(3,5,11,0.82) 0%, rgba(3,5,11,0.45) 42%, rgba(3,5,11,0) 64%)' }}
             />
-            <div className="relative flex h-full flex-col justify-between px-[120px] pb-[120px] pt-[110px]">
+            <div className="relative flex h-full flex-col justify-between px-[120px] pb-[120px] pt-[70px]">
               <motion.div
-                className="flex items-center gap-5 font-display text-[23px] uppercase tracking-[0.3em] text-mist/90"
+                className="flex items-center gap-8 font-display text-[23px] uppercase tracking-[0.3em] text-mist/90"
                 initial={{ opacity: 0, x: -24 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1, delay: 0.5, ease: EASE_OUT }}
               >
-                <span className="hairline h-[2px] w-16" />
-                {presentationInfo.module} · {presentationInfo.institutionShort}
+                <InstitutionLogo height={118} />
+                <span className="h-16 w-[1.5px] bg-white/20" />
+                {presentationInfo.module}
               </motion.div>
 
               <div className="max-w-[1000px]">
@@ -75,7 +85,7 @@ export function Slide01Intro({ step }: SlideProps) {
               </div>
 
               <motion.div
-                className="flex items-end gap-16"
+                className="flex items-end gap-12"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.1, delay: 2.1, ease: EASE_OUT }}
@@ -89,10 +99,8 @@ export function Slide01Intro({ step }: SlideProps) {
                   </div>
                 </div>
                 <div className="mb-1 border-l border-white/15 pl-8 text-[24px] leading-[1.5] text-mute">
-                  <div className="text-mist">{presentationInfo.institution}</div>
-                  <div>
-                    Filière {presentationInfo.field} · {presentationInfo.academicYear}
-                  </div>
+                  <div className="text-mist">Filière {presentationInfo.field}</div>
+                  <div>{presentationInfo.academicYear}</div>
                 </div>
               </motion.div>
             </div>

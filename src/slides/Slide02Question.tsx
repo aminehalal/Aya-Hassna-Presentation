@@ -44,11 +44,11 @@ export function Slide02Question({ step }: SlideProps) {
         <Reveal
           key={side.label}
           delay={1.1 + i * 0.25}
-          className="absolute top-[872px] w-[560px] -translate-x-1/2 text-center"
+          className="absolute top-[838px] w-[660px] -translate-x-1/2 text-center"
           style={{ left: x }}
         >
-          <div className={`font-display text-[36px] font-semibold ${tone}`}>{side.label}</div>
-          <div className="mt-1 text-[26px] leading-snug text-mist/85">{side.text}</div>
+          <div className={`font-display text-[36px] font-semibold leading-tight ${tone}`}>{side.label}</div>
+          <div className="mt-1 text-[25px] leading-snug text-mist/85">{side.text}</div>
         </Reveal>
       ))}
     </div>

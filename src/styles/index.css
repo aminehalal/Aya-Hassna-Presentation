@@ -140,6 +140,32 @@ body {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Light mode: colour-preserving inversion of the whole presentation   */
+/*  (invert flips light/dark, hue-rotate restores the original hues).   */
+/* ------------------------------------------------------------------ */
+html[data-theme='light'] {
+  color-scheme: light;
+  background: #f3f5fb;
+}
+
+html[data-theme='light'] #root {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Elements that must keep their real colours (logo, black screen) */
+html[data-theme='light'] .theme-keep {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.logo-img {
+  filter: brightness(1.15) saturate(1.1) drop-shadow(0 0 14px rgba(150, 190, 255, 0.28));
+}
+
+html[data-theme='light'] .logo-img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 .scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(150, 180, 255, 0.3) transparent;

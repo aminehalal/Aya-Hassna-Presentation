@@ -2,8 +2,9 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useSceneSettings, type SceneProps } from '../sceneSettings';
-import { fibonacciSphere, smooth, useDisposable, useTweenedValue } from '../utils';
+import { smooth, useDisposable, useTweenedValue } from '../utils';
 import { Glow, makeGlowPointsMaterial } from './common';
+import { Bulb, MiniTree } from './symbols';
 
 const R = 2.45;
 const NODES = [
@@ -40,8 +41,8 @@ function colouredTube(curve: THREE.Curve<THREE.Vector3>, from: string, to: strin
 }
 
 /**
- * Scene 10 — "L'écosystème": three structures (change, innovation,
- * learning) connect one arc at a time into a cycle; the cycle then opens
+ * Scene 10 — "L'écosystème": three symbols (a gyroscope for change, a
+ * light-bulb for innovation, a tree for learning) connect one arc at a time into a cycle; the cycle then opens
  * into an ascending spiral of continuous evolution.
  */
 export function RelationshipScene({ step }: SceneProps) {
@@ -49,7 +50,7 @@ export function RelationshipScene({ step }: SceneProps) {
   const system = useRef<THREE.Group>(null);
   const gyro = useRef<THREE.Group>(null);
   const crystals = useRef<THREE.Group>(null);
-  const brain = useRef<THREE.Points>(null);
+  const brain = useRef<THREE.Group>(null);
   const pulses = useRef<THREE.Group>(null);
   const arcs = [
     useTweenedValue(step >= 1 ? 1 : 0, { duration: 1.6, ease: 'power2.inOut' }),
@@ -96,12 +97,6 @@ export function RelationshipScene({ step }: SceneProps) {
   });
   const ghostMat = useDisposable(() => makeGlowPointsMaterial(0.9, 0, '#cfe6ff', false));
 
-  const brainGeo = useDisposable(() => new THREE.BufferGeometry().setFromPoints(fibonacciSphere(220, 0.62)));
-  const brainMat = useDisposable(() => makeGlowPointsMaterial(0.12, 0.95, '#7ff7e0', false));
-  const crystalGeo = useDisposable(() => new THREE.OctahedronGeometry(0.2, 0));
-  const crystalMat = useDisposable(
-    () => new THREE.MeshStandardMaterial({ color: '#e6dcff', emissive: '#8a5cff', emissiveIntensity: 1.1, roughness: 0.15, metalness: 0.4, flatShading: true }),
-  );
 
   useFrame((state, dt) => {
     const speed = reducedMotion ? 0.3 : 1;
@@ -122,17 +117,12 @@ export function RelationshipScene({ step }: SceneProps) {
       gyro.current.children[1].rotation.y += dt * 0.8 * speed;
       gyro.current.children[2].rotation.z -= dt * 0.5 * speed;
     }
+    // Innovation (bulb) bobs and glows; learning (tree) slowly turns
     if (crystals.current) {
-      crystals.current.rotation.y += dt * 0.6 * speed;
-      crystals.current.children.forEach((c, i) => {
-        c.rotation.x += dt * (0.5 + i * 0.2) * speed;
-        c.position.y = Math.sin(t * 1.4 + i * 1.3) * 0.14;
-      });
+      crystals.current.position.y = Math.sin(t * 1.4) * 0.08;
+      crystals.current.rotation.y = Math.sin(t * 0.6) * 0.5;
     }
-    if (brain.current) {
-      brain.current.rotation.y -= dt * 0.35 * speed;
-      brain.current.scale.setScalar(1 + Math.sin(t * 1.6) * 0.04);
-    }
+    if (brain.current) brain.current.rotation.y += dt * 0.35 * speed;
 
     if (pulses.current) {
       pulses.current.children.forEach((p, i) => {
@@ -176,33 +166,22 @@ export function RelationshipScene({ step }: SceneProps) {
           </group>
         </group>
 
-        {/* Innovation — crystals: new solutions */}
+        {/* Innovation — a light-bulb: new solutions (echo of scene 06) */}
         <group position={innovation}>
-          <Glow color="#a98bff" size={2.6} opacity={0.6} />
-          <group ref={crystals}>
-            {[0, 1, 2, 3, 4].map((i) => {
-              const a = (i / 5) * Math.PI * 2;
-              return (
-                <mesh
-                  key={i}
-                  geometry={crystalGeo}
-                  material={crystalMat}
-                  position={[Math.cos(a) * 0.42, 0, Math.sin(a) * 0.42]}
-                  scale={i === 0 ? 1.4 : 1}
-                />
-              );
-            })}
+          <Glow color="#a98bff" size={2.2} opacity={0.22} />
+          <group ref={crystals} position={[0, -0.05, 0]} rotation={[-0.62, 0, 0]}>
+            <Bulb color="#ffd27a" glow={0.45} scale={1.35} position={[0, -0.42, 0]} />
           </group>
         </group>
 
-        {/* Apprentissage — a sphere of knowledge */}
+        {/* Apprentissage — a growing tree of knowledge (echo of scene 08) */}
         <group position={learning}>
-          <Glow color="#3fe0c5" size={2.6} opacity={0.6} />
-          <points ref={brain} geometry={brainGeo} material={brainMat} />
-          <mesh>
-            <sphereGeometry args={[0.2, 24, 24]} />
-            <meshBasicMaterial color="#d8fff6" toneMapped={false} />
-          </mesh>
+          <Glow color="#3fe0c5" size={2.2} opacity={0.2} />
+          <group rotation={[-0.62, 0, 0]}>
+          <group ref={brain} position={[0, -0.7, 0]}>
+            <MiniTree scale={1.45} />
+          </group>
+          </group>
         </group>
 
         {arcGeos.map((g, i) => (

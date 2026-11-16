@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Timer } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { slides } from '../../content/presentation';
 import { speakerNotes } from '../../content/speakerNotes';
+import { useTransitionSound } from '../../hooks/useSound';
 import { createSyncChannel, type SyncMessage } from '../../lib/sync';
 import { NotesContent } from './NotesContent';
 
@@ -17,7 +18,8 @@ function formatDuration(ms: number) {
  * It mirrors and drives the audience window through a BroadcastChannel.
  */
 export function PresenterView() {
-  const [state, setState] = useState({ index: 0, step: 0 });
+  const [state, setState] = useState({ index: 0, step: 0, direction: 1 as 1 | -1 });
+  useTransitionSound(state.index, state.step, state.direction);
   const [connected, setConnected] = useState(false);
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -26,7 +28,11 @@ export function PresenterView() {
   useEffect(() => {
     const channel = createSyncChannel((msg: SyncMessage) => {
       if (msg.type === 'state') {
-        setState({ index: msg.index, step: msg.step });
+        setState((prev) => ({
+          index: msg.index,
+          step: msg.step,
+          direction: msg.index > prev.index || (msg.index === prev.index && msg.step >= prev.step) ? 1 : -1,
+        }));
         setConnected(true);
       }
     });
