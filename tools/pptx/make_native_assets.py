@@ -11,7 +11,8 @@ import random
 
 from PIL import Image, ImageDraw, ImageFilter
 
-OUT = os.path.join("export", "native")
+LIGHT = os.environ.get("LIGHT") == "1"
+OUT = os.path.join("export", "native-light" if LIGHT else "native")
 os.makedirs(OUT, exist_ok=True)
 SS = 4  # supersampling
 
@@ -65,13 +66,13 @@ def person(name, color):
     # vertical gradient fill
     grad = Image.new("RGBA", (W, H))
     gd = ImageDraw.Draw(grad)
-    top, bottom = lighten(color, 0.45), darken(color, 0.12)
+    top, bottom = (lighten(color, 0.05), darken(color, 0.38)) if LIGHT else (lighten(color, 0.45), darken(color, 0.12))
     for y in range(H):
         k = y / H
         gd.line([(0, y), (W, y)], fill=tuple(int(top[i] + (bottom[i] - top[i]) * k) for i in range(3)) + (255,))
     body.paste(grad, (0, 0), mask)
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    out.alpha_composite(glow_layer((W, H), mask, color, 9 * SS, 0.55))
+    out.alpha_composite(glow_layer((W, H), mask, color, 9 * SS, 0.18 if LIGHT else 0.55))
     out.alpha_composite(body)
     save(out, f"person-{name}", (120, 170))
 
@@ -89,8 +90,8 @@ def orb(name, color, size=256, core=0.0):
     for y in range(0, W, SS):
         for x in range(0, W, SS):
             d = math.hypot(x - c, y - c) / c
-            a = max(0.0, 1 - d) ** 2.2
-            col = lighten(color, min(1.0, core * max(0.0, 1 - d * 2.5)))
+            a = max(0.0, 1 - d) ** (2.8 if LIGHT else 2.2) * (0.55 if LIGHT else 1)
+            col = lighten(color, min(1.0, core * max(0.0, 1 - d * 2.5))) if not LIGHT else color
             for dy in range(SS):
                 for dx in range(SS):
                     px[x + dx, y + dy] = col + (int(255 * a),)
@@ -144,7 +145,7 @@ def bulb(name, glass, glow_strength, size=(140, 200)):
     d.polygon([(cx - r * 0.62, cy + r * 0.72), (cx + r * 0.62, cy + r * 0.72), (cx + r * 0.36, int(H * 0.72)), (cx - r * 0.36, int(H * 0.72))], fill=255)
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     out.alpha_composite(glow_layer((W, H), mask, glass, 14 * SS, glow_strength))
-    body = Image.new("RGBA", (W, H), lighten(glass, 0.35) + (255,))
+    body = Image.new("RGBA", (W, H), (darken(glass, 0.1) if LIGHT else lighten(glass, 0.35)) + (255,))
     out.alpha_composite(Image.composite(body, Image.new("RGBA", (W, H), (0, 0, 0, 0)), mask))
     # highlight + filament
     dd = ImageDraw.Draw(out)
@@ -161,10 +162,10 @@ def bulb(name, glass, glow_strength, size=(140, 200)):
     save(out, name, size)
 
 
-bulb("bulb-off", (150, 160, 200), 0.25)
+bulb("bulb-off", (140, 150, 185) if LIGHT else (150, 160, 200), 0.25)
 for n in ("cyan", "violet", "blue", "amber", "coral"):
     bulb(f"bulb-{n}", COLORS[n], 0.8)
-bulb("bulb-lit", (255, 210, 122), 1.0)
+bulb("bulb-lit", (245, 170, 40) if LIGHT else (255, 210, 122), 1.0)
 
 
 # ---------------------------------------------------------------- gyroscope (change)
@@ -182,7 +183,7 @@ def gyroscope(size=220):
     m.polygon([(c, c - 18 * SS), (c + 14 * SS, c), (c, c + 18 * SS), (c - 14 * SS, c)], fill=255)
     color = COLORS["blue"]
     img.alpha_composite(glow_layer((W, W), mask, color, 10 * SS, 0.9))
-    body = Image.new("RGBA", (W, W), lighten(color, 0.55) + (255,))
+    body = Image.new("RGBA", (W, W), (darken(color, 0.15) if LIGHT else lighten(color, 0.55)) + (255,))
     img.alpha_composite(Image.composite(body, Image.new("RGBA", (W, W), (0, 0, 0, 0)), mask))
     save(img, "gyroscope", (size, size))
 
@@ -192,6 +193,26 @@ gyroscope()
 
 # ---------------------------------------------------------------- background
 def background():
+    if LIGHT:
+        W, H = 1920, 1080
+        img = Image.new("RGB", (W, H))
+        d = ImageDraw.Draw(img)
+        for y in range(H):
+            k = y / H
+            d.line([(0, y), (W, y)], fill=(int(246 - 18 * k), int(248 - 14 * k), int(255 - 6 * k)))
+        neb = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        nd = ImageDraw.Draw(neb)
+        for (x, y, r, col, a) in ((1400, 420, 520, (150, 175, 255), 90), (250, 900, 460, (200, 175, 255), 80)):
+            nd.ellipse([x - r, y - r, x + r, y + r], fill=col + (a,))
+        neb = neb.filter(ImageFilter.GaussianBlur(170))
+        img = Image.alpha_composite(img.convert("RGBA"), neb)
+        st = ImageDraw.Draw(img)
+        rnd = random.Random(7)
+        for _ in range(260):
+            x, y = rnd.random() * W, rnd.random() * H
+            st.ellipse([x, y, x + 2, y + 2], fill=(120, 140, 200, 120))
+        img.convert("RGB").save(os.path.join(OUT, "background.png"), optimize=True)
+        return
     W, H = 1920, 1080
     img = Image.new("RGB", (W, H), (3, 5, 11))
     d = ImageDraw.Draw(img)

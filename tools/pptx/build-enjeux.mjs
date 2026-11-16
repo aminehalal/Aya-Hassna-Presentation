@@ -14,7 +14,22 @@ import pptxgen from 'pptxgenjs';
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, 'export');
-const icon = (n) => path.join(OUT, 'native', `${n}.png`);
+
+const LIGHT = process.env.LIGHT === '1';
+const DARK_FILLS = ['162042', '141C3A', '0B1124', '1D2A55', '3B2FBF', '1B3A7A'];
+const fillTone = (c) => (LIGHT && DARK_FILLS.includes(c) ? (c === '3B2FBF' ? '8F7BFF' : 'EEF2FF') : LIGHT && c === 'FFFFFF' ? '4F8CFF' : c);
+/** Light mode: white text → ink, pale tints → deeper tones of the same hue. */
+const tone = (c) => {
+  if (!LIGHT || !c) return c;
+  const h = c.toUpperCase();
+  if (h === 'FFFFFF') return '0B1124';
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum < 0.5) return h;
+  const k = lum > 0.8 ? 0.42 : 0.62;
+  return [r, g, b].map((v) => Math.round(v * k).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+const icon = (n) => path.join(OUT, LIGHT ? 'native-light' : 'native', `${n}.png`);
 const LOGO = path.join(ROOT, 'public', 'logo-est-sale.png');
 const LOGO_RATIO = 967 / 460;
 const inch = (v) => v / 144;
@@ -137,7 +152,7 @@ function ambient(name, effect, o = {}) {
 function text(slide, value, o) {
   const name = uniq(o.name ?? `t${used.size}`);
   slide.addText(value, {
-    x: inch(o.x), y: inch(o.y), w: inch(o.w), h: inch(o.h), fontSize: ptOf(o.size, o.min ?? 12), color: o.color ?? WHITE,
+    x: inch(o.x), y: inch(o.y), w: inch(o.w), h: inch(o.h), fontSize: ptOf(o.size, o.min ?? 12), color: tone(o.color ?? WHITE),
     bold: o.bold ?? false, italic: o.italic ?? false, fontFace: o.head ? HEAD : undefined, align: o.align ?? 'left',
     valign: o.valign ?? 'top', margin: 0, isTextBox: true, objectName: name, charSpacing: o.charSpacing, lineSpacingMultiple: 1.05, fit: 'none',
   });
@@ -154,7 +169,7 @@ function shape(slide, type, x, y, w, h, name, o = {}) {
   const n = uniq(name);
   slide.addShape(type, {
     x: inch(x), y: inch(y), w: inch(w), h: inch(h), objectName: n,
-    fill: o.fill ? { color: o.fill, transparency: o.fillT ?? 0 } : { type: 'none' },
+    fill: o.fill ? { color: fillTone(o.fill), transparency: o.fillT ?? 0 } : { type: 'none' },
     line: o.line ? { color: o.line, width: o.lineW ?? 1.5, transparency: o.lineT ?? 0, dashType: o.dash } : { type: 'none' },
     rectRadius: o.radius,
   });
@@ -474,7 +489,7 @@ FOCUS.forEach((f, i) => {
   text(slide, `Questions & échanges · ${PRESENTERS.join(' & ')} · ${SCHOOL}`, { x: 160, y: 890, w: 1600, h: 50, size: 28, color: MIST, align: 'center', name: '!!sub', at: 1.6 });
 }
 
-const deckPath = path.join(OUT, 'enjeux-base.pptx');
+const deckPath = path.join(OUT, process.env.DECK_NAME ?? 'enjeux-base.pptx');
 await pres.writeFile({ fileName: deckPath });
 fs.writeFileSync(path.join(OUT, 'enjeux-anims.json'), JSON.stringify(anims, null, 1));
 console.log(`enjeux deck: ${deckPath} (${slideNo} slides, ${anims.length} animations planned)`);

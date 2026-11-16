@@ -60,7 +60,22 @@ const C = { blue: '4F8CFF', violet: 'A98BFF', cyan: '45E0FF', amber: 'FFB86B', t
 const inch = (v) => v / 144; // web stage px → inches (1920 px = 13.333 in)
 const ptOf = (v, min = 12) => Math.max(min, Math.round(v) / 2);
 const hex = (c) => c.replace('#', '').toUpperCase();
-const icon = (name) => path.join(ICONS, `${name}.png`);
+
+const LIGHT = process.env.LIGHT === '1';
+const DARK_FILLS = ['162042', '141C3A', '0B1124', '1D2A55', '3B2FBF', '1B3A7A'];
+const fillTone = (c) => (LIGHT && DARK_FILLS.includes(c) ? (c === '3B2FBF' ? '8F7BFF' : 'EEF2FF') : LIGHT && c === 'FFFFFF' ? '4F8CFF' : c);
+/** Light mode: white text → ink, pale tints → deeper tones of the same hue. */
+const tone = (c) => {
+  if (!LIGHT || !c) return c;
+  const h = c.toUpperCase();
+  if (h === 'FFFFFF') return '0B1124';
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum < 0.5) return h;
+  const k = lum > 0.8 ? 0.42 : 0.62;
+  return [r, g, b].map((v) => Math.round(v * k).toString(16).padStart(2, '0')).join('').toUpperCase();
+};
+const icon = (name) => path.join(LIGHT ? ICONS.replace('native', 'native-light') : ICONS, `${name}.png`);
 /** PowerPoint only accepts rotations in [0, 360). */
 const deg = (r) => (r === undefined ? undefined : ((r % 360) + 360) % 360);
 const LOGO = path.join(ROOT, 'public', 'logo-est-sale.png');
@@ -113,7 +128,7 @@ function text(slide, value, o) {
   const name = uniqueName(o.name ?? `t-${slideNo}-${usedNames.size}`);
   slide.addText(value, {
     x: inch(o.x), y: inch(o.y), w: inch(o.w), h: inch(o.h),
-    fontSize: ptOf(o.size, o.min ?? 12), color: o.color ?? WHITE, bold: o.bold ?? false, italic: o.italic ?? false,
+    fontSize: ptOf(o.size, o.min ?? 12), color: tone(o.color ?? WHITE), bold: o.bold ?? false, italic: o.italic ?? false,
     fontFace: o.head ? HEAD : undefined, align: o.align ?? 'left', valign: o.valign ?? 'top', margin: 0, isTextBox: true,
     objectName: name, charSpacing: o.charSpacing, lineSpacingMultiple: o.lineSpacing ?? 1.05, fit: 'none',
     strike: o.strike ? 'sngStrike' : undefined,
@@ -142,7 +157,7 @@ function shape(slide, type, x, y, w, h, name, o = {}) {
   const n = uniqueName(name);
   slide.addShape(type, {
     x: inch(x), y: inch(y), w: inch(w), h: inch(h), objectName: n, rotate: deg(o.rotate),
-    fill: o.fill ? { color: o.fill, transparency: o.fillT ?? 0 } : { type: 'none' },
+    fill: o.fill ? { color: fillTone(o.fill), transparency: o.fillT ?? 0 } : { type: 'none' },
     line: o.line ? { color: o.line, width: o.lineW ?? 1.5, transparency: o.lineT ?? 0, dashType: o.dash } : { type: 'none' },
     rectRadius: o.radius, angleRange: o.angles, flipH: o.flipH, flipV: o.flipV,
   });
@@ -1008,10 +1023,10 @@ for (let step = 0; step < 3; step++) {
     const n = uniqueName(`!!ref-${i}`);
     slide.addText(
       [
-        { text: `${ref.authors} `, options: { bold: true, color: WHITE } },
-        { text: `(${ref.year}). `, options: { color: accent } },
-        { text: `${ref.title}. `, options: { italic: true, color: WHITE, breakLine: true } },
-        { text: ref.details, options: { color: MUTE } },
+        { text: `${ref.authors} `, options: { bold: true, color: tone(WHITE) } },
+        { text: `(${ref.year}). `, options: { color: tone(accent) } },
+        { text: `${ref.title}. `, options: { italic: true, color: tone(WHITE), breakLine: true } },
+        { text: ref.details, options: { color: tone(MUTE) } },
       ],
       { x: inch(x), y: inch(y), w: inch(800), h: inch(126), fontSize: 13, margin: 0, valign: 'top', isTextBox: true, objectName: n, lineSpacingMultiple: 1.05 },
     );
