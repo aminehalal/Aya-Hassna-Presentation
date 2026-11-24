@@ -17,12 +17,41 @@ const OUT = path.join(ROOT, 'export');
 
 const LIGHT = process.env.LIGHT === '1';
 const DARK_FILLS = ['162042', '141C3A', '0B1124', '1D2A55', '3B2FBF', '1B3A7A'];
-const fillTone = (c) => (LIGHT && DARK_FILLS.includes(c) ? (c === '3B2FBF' ? '8F7BFF' : 'EEF2FF') : LIGHT && c === 'FFFFFF' ? '4F8CFF' : c);
-/** Light mode: white text → ink, pale tints → deeper tones of the same hue. */
+/** Light mode palette: the neon accents of the dark deck, re-tuned to read on a
+ *  pale background (same hues, deeper and less saturated), plus a navy ink. */
+const INK = '1B2340';
+const LIGHT_MAP = {
+  '4F8CFF': '2F6BDF', // blue
+  'A98BFF': '7351D6', // violet
+  '3FE0C5': '0E9384', // teal
+  'FFB86B': 'D97E0F', // amber
+  '45E0FF': '0A8DB0', // cyan
+  'FF7A6B': 'DC5440', // coral
+  'B6A8FF': '6B57D6', // kicker violet
+  '7B8CFF': '8C9AE6', // orbits
+  '8AA4E0': 'A9B4D6', // neutral lines
+  'C7D4FF': '3B4BA8', // "Merci"
+  'FFD2A1': '9A5A08', // warm text
+  'C9D6F2': '4A5578', // MIST → body text
+  '93A3C7': '7A84A3', // MUTE → captions
+};
+/** Accent colour for lines/fills (white stays white). */
+const acc = (c) => (LIGHT && c && LIGHT_MAP[c.toUpperCase()]) || c;
+const fillTone = (c) => {
+  if (!LIGHT) return c;
+  if (DARK_FILLS.includes(c)) return c === '3B2FBF' ? '7351D6' : 'FFFFFF';
+  if (c === 'FFFFFF') return '8C9AE6';
+  return acc(c);
+};
+/** Light mode: white text → navy ink, tints → deeper tones of the same hue.
+ *  'FFFFFE' means "really white" (numbers on coloured discs). */
 const tone = (c) => {
-  if (!LIGHT || !c) return c;
+  if (!c) return c;
   const h = c.toUpperCase();
-  if (h === 'FFFFFF') return '0B1124';
+  if (h === 'FFFFFE') return 'FFFFFF';
+  if (!LIGHT) return c;
+  if (h === 'FFFFFF') return INK;
+  if (LIGHT_MAP[h]) return LIGHT_MAP[h];
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   if (lum < 0.5) return h;
@@ -51,7 +80,7 @@ const ENJEUX = [
     short: 'Recruter',
     title: 'Recruter de nouveaux talents',
     color: '4F8CFF', orb: 'blue',
-    stat: { value: '46 %', text: 'des responsables RH veulent attirer de nouveaux talents en 2023' },
+    stat: { value: '46 %', text: 'des responsables RH font du recrutement de talents une priorité (selon le webinar)' },
     leaves: [
       { t: 'Marque employeur', d: '69 % des candidats rejettent une entreprise à l’image médiocre : la soigner en interne et en externe.' },
       { t: 'Vivier interne d’abord', d: 'Promotion interne, reconversion, nouvelles missions avant de recruter à l’extérieur.' },
@@ -154,7 +183,7 @@ function text(slide, value, o) {
   slide.addText(value, {
     x: inch(o.x), y: inch(o.y), w: inch(o.w), h: inch(o.h), fontSize: ptOf(o.size, o.min ?? 12), color: tone(o.color ?? WHITE),
     bold: o.bold ?? false, italic: o.italic ?? false, fontFace: o.head ? HEAD : undefined, align: o.align ?? 'left',
-    valign: o.valign ?? 'top', margin: 0, isTextBox: true, objectName: name, charSpacing: o.charSpacing, lineSpacingMultiple: 1.05, fit: 'none',
+    valign: o.valign ?? 'top', margin: 0, isTextBox: true, objectName: name, charSpacing: o.charSpacing, lineSpacingMultiple: 1.05, fit: 'none', glow: o.glow,
   });
   if (o.anim !== false) enter(name, o.anim ?? 'fade', { dir: o.dir, dur: o.dur ?? 0.5, gap: o.gap ?? 0.08, at: o.at });
   return name;
@@ -170,8 +199,9 @@ function shape(slide, type, x, y, w, h, name, o = {}) {
   slide.addShape(type, {
     x: inch(x), y: inch(y), w: inch(w), h: inch(h), objectName: n,
     fill: o.fill ? { color: fillTone(o.fill), transparency: o.fillT ?? 0 } : { type: 'none' },
-    line: o.line ? { color: o.line, width: o.lineW ?? 1.5, transparency: o.lineT ?? 0, dashType: o.dash } : { type: 'none' },
+    line: o.line ? { color: acc(o.line), width: o.lineW ?? 1.5, transparency: o.lineT ?? 0, dashType: o.dash } : { type: 'none' },
     rectRadius: o.radius,
+    shadow: LIGHT && type === pres.shapes.ROUNDED_RECTANGLE ? { type: 'outer', color: INK, opacity: 0.1, blur: 14, offset: 4, angle: 90 } : undefined,
   });
   if (o.anim) enter(n, o.anim, { dir: o.dir, dur: o.dur, gap: o.gap, at: o.at });
   return n;
@@ -180,14 +210,14 @@ function line(slide, x1, y1, x2, y2, name, o = {}) {
   const n = uniq(name);
   slide.addShape(pres.shapes.LINE, {
     x: inch(Math.min(x1, x2)), y: inch(Math.min(y1, y2)), w: inch(Math.max(1, Math.abs(x2 - x1))), h: inch(Math.max(1, Math.abs(y2 - y1))),
-    flipH: x2 < x1, flipV: y2 < y1, objectName: n, line: { color: o.color ?? '8AA4E0', width: o.width ?? 1.5, transparency: o.t ?? 30, dashType: o.dash },
+    flipH: x2 < x1, flipV: y2 < y1, objectName: n, line: { color: acc(o.color ?? '8AA4E0'), width: o.width ?? 1.5, transparency: o.t ?? 30, dashType: o.dash },
   });
   if (o.anim !== false) enter(n, o.anim ?? 'wipe', { dir: o.dir ?? (x2 >= x1 ? 'left' : 'right'), dur: o.dur ?? 0.5, gap: o.gap ?? 0.03, at: o.at });
   return n;
 }
 /** A small light that travels along a line, forever (energy flowing through the map). */
 function flow(slide, x1, y1, x2, y2, name, o = {}) {
-  const n = img(slide, o.orb ?? 'orb-white', x1, y1, o.size ?? 40, o.size ?? 40, name, { anim: 'fade', at: o.at ?? 1.6 });
+  const n = img(slide, LIGHT && (o.orb ?? 'orb-white') === 'orb-white' ? 'orb-violet' : o.orb ?? 'orb-white', x1, y1, o.size ?? 40, o.size ?? 40, name, { anim: 'fade', at: o.at ?? 1.6 });
   ambient(n, 'path', { dur: o.dur ?? 1.8, delay: o.delay ?? 0, path: `M 0 0 L ${((x2 - x1) / 1920).toFixed(4)} ${((y2 - y1) / 1080).toFixed(4)} E` });
 }
 function logo(slide, x, y, h) {
@@ -221,8 +251,10 @@ function centre(slide, cx, cy, size, o = {}) {
   ambient(c, 'pulse', { dur: 1.8, by: 106, reverse: true });
   const ring = shape(slide, pres.shapes.OVAL, cx - size * 0.72, cy - size * 0.72, size * 1.44, size * 1.44, '!!c-ring', { line: 'B6A8FF', lineW: 1.5, dash: 'sysDot', anim: 'expand', at: 0.4 });
   ambient(ring, 'spin', { dur: 20, by: 360 });
+  // Light mode: the label sits on a solid violet disc (like the numbered nodes) for a crisp read
+  if (o.label && LIGHT) shape(slide, pres.shapes.OVAL, cx - size * 0.47, cy - size * 0.47, size * 0.94, size * 0.94, '!!c-disc', { fill: '5B47C8', line: 'FFFFFF', lineW: 2, lineT: 20, anim: 'zoom', at: 0.45, dur: 0.6 });
   if (o.label)
-    text(slide, o.label, { x: cx - 200, y: cy - (o.labelSize ?? 34) * 0.7, w: 400, h: (o.labelSize ?? 34) * 1.4 * (o.lines ?? 1), size: o.labelSize ?? 34, bold: true, head: true, align: 'center', valign: 'middle', name: '!!c-label', anim: 'zoom', at: 0.6 });
+    text(slide, o.label, { x: cx - 200, y: cy - (o.labelSize ?? 34) * 0.7, w: 400, h: (o.labelSize ?? 34) * 1.4 * (o.lines ?? 1), size: o.labelSize ?? 34, bold: true, head: true, color: 'FFFFFE', align: 'center', valign: 'middle', name: '!!c-label', anim: 'zoom', at: 0.6 });
 }
 
 /** One branch node of the map (the same names everywhere, so Morph moves it). */
@@ -232,13 +264,13 @@ function node(slide, k, cx, cy, size, o = {}) {
   if (!o.dim) ambient(g, 'pulse', { dur: 2.2, by: 112, reverse: true, delay: k * 0.3 });
   shape(slide, pres.shapes.OVAL, cx - size / 2, cy - size / 2, size, size, `!!b${k}-node`, { fill: e.color, fillT: o.dim ? 70 : 15, line: 'FFFFFF', lineT: 40, lineW: 1.5, anim: 'zoom', at: (o.at ?? 0.5 + k * 0.15) + 0.05, dur: 0.5 });
   if (size >= 60)
-    text(slide, String(k + 1), { x: cx - size / 2, y: cy - size * 0.32, w: size, h: size * 0.64, size: size * 0.42, bold: true, head: true, align: 'center', valign: 'middle', name: `!!b${k}-num`, anim: false });
+    text(slide, String(k + 1), { x: cx - size / 2, y: cy - size * 0.32, w: size, h: size * 0.64, size: size * 0.42, bold: true, head: true, color: 'FFFFFE', align: 'center', valign: 'middle', name: `!!b${k}-num`, anim: 'zoom', at: (o.at ?? 0.5 + k * 0.15) + 0.05, dur: 0.5 });
   if (o.label)
     text(slide, o.label, { x: cx - (o.labelW ?? 280) / 2, y: cy + size / 2 + 12, w: o.labelW ?? 280, h: o.labelH ?? 80, size: o.labelSize ?? 28, bold: true, head: true, color: o.labelColor ?? WHITE, align: 'center', name: `!!b${k}-label`, anim: 'fly', dir: 'bottom', at: (o.at ?? 0.5 + k * 0.15) + 0.2 });
 }
 
 function title(slide, value, kicker, o = {}) {
-  if (kicker) text(slide, kicker.toUpperCase(), { x: 120, y: 70, w: 1200, h: 36, size: 24, color: o.kickerColor ?? MIST, charSpacing: 4, name: '!!kicker', anim: 'fly', dir: 'left' });
+  if (kicker) text(slide, kicker.toUpperCase(), { x: 120, y: 70, w: 1200, h: 36, size: 24, color: o.kickerColor ?? MIST, charSpacing: 4, bold: LIGHT, name: '!!kicker', anim: 'fly', dir: 'left' });
   text(slide, value, { x: 120, y: 108, w: o.w ?? 1300, h: 90, size: o.size ?? 60, bold: false, head: true, name: '!!title', anim: 'ascend', dur: 0.7 });
 }
 
@@ -266,20 +298,22 @@ function fullMap(slide, o = {}) {
       node(slide, k, x, y, 130, { label: e.short, at: 1.1 + k * 0.15 });
       return;
     }
-    // Synthesis: label placed toward the centre, two key ideas fanned outward
+    // Synthesis: label right under the node (above it for the two bottom
+    // branches), so it never touches the centre ring or the key ideas
     node(slide, k, x, y, 110, { at: 1.1 + k * 0.15 });
-    const rad = (ANGLES[k] * Math.PI) / 180;
-    const [ux, uy] = [Math.cos(rad), Math.sin(rad)];
-    const lx = x - ux * 175;
-    const ly = y - uy * 125;
-    shape(slide, pres.shapes.ROUNDED_RECTANGLE, lx - 135, ly - 28, 270, 56, `!!b${k}-label-bg`, { fill: '0B1124', fillT: 10, line: e.color, lineW: 1, lineT: 50, radius: 0.2, anim: 'zoom', at: 1.28 + k * 0.15 });
-    text(slide, e.short, { x: lx - 130, y: ly - 26, w: 260, h: 52, size: 24, bold: true, head: true, color: e.color, align: 'center', valign: 'middle', name: `!!b${k}-label`, anim: 'zoom', at: 1.3 + k * 0.15 });
+    const label = ['Recruter', 'Engager & fidéliser', 'QVCT & climat social', 'Modes de travail', 'Processus RH'][k];
+    const lh = 56;
+    const below = Math.sin((ANGLES[k] * Math.PI) / 180) < 0.3;
+    const lx = x;
+    const ly = below ? y + 55 + 20 + lh / 2 : y - 55 - 20 - lh / 2;
+    shape(slide, pres.shapes.ROUNDED_RECTANGLE, lx - 130, ly - lh / 2, 260, lh, `!!b${k}-label-bg`, { fill: '0B1124', fillT: 10, line: e.color, lineW: 1, lineT: 50, radius: 0.2, anim: 'zoom', at: 1.28 + k * 0.15 });
+    text(slide, label, { x: lx - 126, y: ly - lh / 2 + 4, w: 252, h: lh - 8, size: 22, bold: true, head: true, color: e.color, align: 'center', valign: 'middle', name: `!!b${k}-label`, anim: 'zoom', at: 1.3 + k * 0.15 });
     e.leaves.slice(0, 2).forEach((lf, j) => {
       const a = ANGLES[k] + (j === 0 ? -34 : 34);
       const [px, py] = ell(x, y, 260, 150, a);
       line(slide, x, y, px, py, `!!lf${k}-${j}l`, { color: e.color, width: 1, t: 45, at: 2 + k * 0.2 + j * 0.08 });
-      shape(slide, pres.shapes.ROUNDED_RECTANGLE, px - 120, py - 26, 240, 52, `!!lf${k}-${j}`, { fill: '141C3A', fillT: 10, line: e.color, lineW: 1, radius: 0.18, anim: 'zoom', at: 2.05 + k * 0.2 + j * 0.08, dur: 0.35 });
-      text(slide, lf.t, { x: px - 112, y: py - 22, w: 224, h: 44, size: 21, align: 'center', valign: 'middle', name: `!!lf${k}-${j}t`, anim: false });
+      shape(slide, pres.shapes.ROUNDED_RECTANGLE, px - 128, py - 32, 256, 64, `!!lf${k}-${j}`, { fill: '141C3A', fillT: 10, line: e.color, lineW: 1, radius: 0.18, anim: 'zoom', at: 2.05 + k * 0.2 + j * 0.08, dur: 0.35 });
+      text(slide, lf.t, { x: px - 120, y: py - 28, w: 240, h: 56, size: 21, align: 'center', valign: 'middle', name: `!!lf${k}-${j}t`, anim: 'zoom', at: 2.05 + k * 0.2 + j * 0.08, dur: 0.35 });
     });
   });
 }
@@ -289,7 +323,7 @@ function focus(slide, k, leaves, o = {}) {
   const e = ENJEUX[k];
   // breadcrumb: the centre of the map shrinks to the top-right corner
   centre(slide, 1810, 110, 90, {});
-  text(slide, 'Enjeux RH 2023', { x: 1560, y: 92, w: 190, h: 36, size: 22, color: MUTE, align: 'right', name: '!!crumb', anim: false });
+  text(slide, 'Enjeux RH 2023', { x: 1560, y: 92, w: 190, h: 36, size: 22, color: MUTE, align: 'right', name: '!!crumb', at: 0.3, dur: 0.6 });
   line(slide, 1765, 110, 400, 560, '!!crumb-line', { color: e.color, width: 1, t: 75, dash: 'dash', at: 0.4, anim: 'fade' });
   // the other branches become a small strip at the bottom left (still on the map)
   ENJEUX.forEach((_, j) => {
@@ -313,8 +347,8 @@ function focus(slide, k, leaves, o = {}) {
     shape(slide, pres.shapes.ROUNDED_RECTANGLE, 800, y - (gap - 22) / 2, 1020, gap - 22, `!!k-card${i}`, { fill: '141C3A', fillT: 15, line: color, lineW: 1.25, lineT: 30, radius: 0.12, anim: 'fly', dir: 'right', at: 0.9 + i * 0.18, dur: 0.6 });
     const dot = shape(slide, pres.shapes.OVAL, 828, y - 15, 30, 30, `!!k-dot${i}`, { fill: color, anim: 'zoom', at: 1.2 + i * 0.18, dur: 0.3 });
     ambient(dot, 'pulse', { dur: 1.2, by: 125, reverse: true, delay: i * 0.2 });
-    text(slide, lf.t, { x: 880, y: y - (gap - 22) / 2 + 14, w: 920, h: 44, size: 32, bold: true, head: true, color: WHITE, name: `!!k-t${i}`, anim: false });
-    text(slide, lf.d, { x: 880, y: y - (gap - 22) / 2 + 56, w: 920, h: gap - 80, size: 25, color: MIST, min: 13, name: `!!k-d${i}`, anim: false });
+    text(slide, lf.t, { x: 880, y: y - (gap - 22) / 2 + 14, w: 920, h: 44, size: 32, bold: true, head: true, color: WHITE, name: `!!k-t${i}`, anim: 'fly', dir: 'right', at: 0.9 + i * 0.18, dur: 0.6 });
+    text(slide, lf.d, { x: 880, y: y - (gap - 22) / 2 + 56, w: 920, h: gap - 80, size: 25, color: MIST, min: 13, name: `!!k-d${i}`, anim: 'fly', dir: 'right', at: 0.9 + i * 0.18, dur: 0.6 });
   });
 }
 
@@ -352,7 +386,7 @@ const N = (...lines) => lines.join('\n');
 // 2 — Context: an anxiety-inducing year
 {
   const slide = addSlide({ title: '02. Contexte' }, N(
-    'INTRODUIRE : 2022 a déjà été une année de défis.',
+    'INTRODUIRE : les dernières années ont été marquées par de nombreux défis.',
     'À DIRE : crise sanitaire, nouvelles organisations du travail, guerre des talents, « grande démission », puis crise énergétique et inflation. Le contexte est anxiogène pour tous.',
     'D’un côté, les équipes ont besoin d’écoute et de soutien ; de l’autre, les entreprises doivent optimiser leurs budgets sans sacrifier la productivité.',
     'TRANSITION : « C’est dans ce contexte que cinq grands enjeux RH apparaissent. »',
@@ -366,13 +400,14 @@ const N = (...lines) => lines.join('\n');
     line(slide, x, y, cx, cy, `!!cr-l${i}`, { color: 'FF7A6B', width: 1.5, t: 40, at: 0.8 + i * 0.12 });
     const b = img(slide, 'orb-coral', x, y, 170, 170, `!!cr-g${i}`, { anim: 'zoom', at: 0.7 + i * 0.12, transparency: 20 });
     ambient(b, 'path', { dur: 2 + (i % 3) * 0.5, path: 'M 0 0 L 0 -0.012 E', reverse: true, delay: i * 0.2 });
+    if (LIGHT) shape(slide, pres.shapes.ROUNDED_RECTANGLE, x - 125, y - (c.length > 18 ? 42 : 30), 250, c.length > 18 ? 84 : 60, `!!cr-p${i}`, { fill: 'FFFFFD', line: 'FF7A6B', lineW: 1.25, lineT: 35, radius: 0.5, anim: 'zoom', at: 0.85 + i * 0.12, dur: 0.5 });
     text(slide, c, { x: x - 120, y: y - 24, w: 240, h: 48, size: 26, bold: true, align: 'center', valign: 'middle', name: `!!cr-t${i}`, at: 0.85 + i * 0.12 });
   });
   [['Les équipes', 'ont besoin d’écoute et de soutien.', '45E0FF'], ['Les entreprises', 'doivent optimiser leurs budgets sans sacrifier la productivité.', 'FFB86B']].forEach(([h, d, c], i) => {
     const y = 330 + i * 240;
     shape(slide, pres.shapes.ROUNDED_RECTANGLE, 120, y, 640, 190, `!!ctx-${i}`, { fill: '141C3A', fillT: 15, line: c, lineT: 30, radius: 0.12, anim: 'fly', dir: 'left', at: 1.8 + i * 0.3 });
-    text(slide, h, { x: 156, y: y + 28, w: 580, h: 50, size: 36, bold: true, head: true, color: c, name: `!!ctx-${i}h`, anim: false });
-    text(slide, d, { x: 156, y: y + 84, w: 580, h: 90, size: 28, color: MIST, name: `!!ctx-${i}d`, anim: false });
+    text(slide, h, { x: 156, y: y + 28, w: 580, h: 50, size: 36, bold: true, head: true, color: c, name: `!!ctx-${i}h`, anim: 'fly', dir: 'left', at: 1.8 + i * 0.3, dur: 0.6 });
+    text(slide, d, { x: 156, y: y + 84, w: 580, h: 90, size: 28, color: MIST, name: `!!ctx-${i}d`, anim: 'fly', dir: 'left', at: 1.8 + i * 0.3, dur: 0.6 });
   });
   counter(slide, 2, TOTAL);
 }
@@ -459,7 +494,7 @@ FOCUS.forEach((f, i) => {
     const g = img(slide, `orb-${['cyan', 'violet', 'teal'][i]}`, x + 120, 520, 360, 360, `!!cc-g${i}`, { anim: 'zoom', at: 0.4 + i * 0.4, transparency: 25 });
     ambient(g, 'pulse', { dur: 1.6, by: 110, reverse: true, delay: i * 0.4 });
     shape(slide, pres.shapes.OVAL, x, 400, 240, 240, `!!cc-c${i}`, { fill: c, fillT: 20, line: 'FFFFFF', lineT: 40, anim: 'zoom', at: 0.45 + i * 0.4 });
-    text(slide, String(i + 1), { x, y: 470, w: 240, h: 100, size: 90, bold: true, head: true, align: 'center', valign: 'middle', name: `!!cc-n${i}`, anim: false });
+    text(slide, String(i + 1), { x, y: 470, w: 240, h: 100, size: 90, bold: true, head: true, color: 'FFFFFE', align: 'center', valign: 'middle', name: `!!cc-n${i}`, anim: 'zoom', at: 0.45 + i * 0.4, dur: 0.6 });
     text(slide, h, { x: x - 80, y: 670, w: 400, h: 50, size: 34, bold: true, head: true, color: c, align: 'center', name: `!!cc-h${i}`, at: 0.6 + i * 0.4 });
     text(slide, d, { x: x - 80, y: 722, w: 400, h: 44, size: 26, color: MIST, align: 'center', name: `!!cc-d${i}`, at: 0.7 + i * 0.4 });
     if (i < 2) {
@@ -468,7 +503,7 @@ FOCUS.forEach((f, i) => {
     }
   });
   shape(slide, pres.shapes.ROUNDED_RECTANGLE, 420, 850, 1080, 100, '!!cc-more', { fill: '141C3A', fillT: 15, line: 'FFB86B', lineT: 30, radius: 0.15, anim: 'fly', dir: 'bottom', at: 2 });
-  text(slide, 'Pour aller plus loin : diversité, équité et inclusion', { x: 440, y: 875, w: 1040, h: 50, size: 32, color: 'FFD2A1', align: 'center', name: '!!cc-more-t', anim: false });
+  text(slide, 'Pour aller plus loin : diversité, équité et inclusion', { x: 440, y: 875, w: 1040, h: 50, size: 32, color: 'FFD2A1', align: 'center', name: '!!cc-more-t', anim: 'fly', dir: 'bottom', at: 2, dur: 0.6 });
   counter(slide, 11, TOTAL);
 }
 

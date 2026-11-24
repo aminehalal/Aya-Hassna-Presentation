@@ -39,7 +39,7 @@ try {
 
     $t = $slide.SlideShowTransition
     if ($n -eq 1) { $t.EntryEffect = $FADE } else { $t.EntryEffect = $MORPH }
-    $t.Duration = 1.1
+    $t.Duration = 1.3
 
     $items = @($animPlan | Where-Object { $_.slide -eq $n })
     $seq = $slide.TimeLine.MainSequence
@@ -59,6 +59,8 @@ try {
       $e.Timing.TriggerDelayTime = [single]$a.delay
       $e.Timing.RepeatCount = 9999
       if ($a.reverse) { $e.Timing.AutoReverse = -1 }
+      # Pulses "breathe": ease in and out instead of a mechanical back-and-forth
+      if ($a.effect -eq 'pulse') { $e.Timing.Accelerate = 0.5; $e.Timing.Decelerate = 0.5 }
       $applied++
     }
 
@@ -70,8 +72,12 @@ try {
       $code = $ENTER[$a.effect]; if (-not $code) { $code = 10 }
       $e = $seq.AddEffect($slide.Shapes.Item($a.shape), $code, 0, $WITH_PREVIOUS)
       if ($a.dir -and $DIR.ContainsKey($a.dir)) { try { $e.EffectParameters.Direction = $DIR[$a.dir] } catch {} }
+      # Titles reveal word by word (one 10 % step per word)
+      if ($a.shape -eq '!!title') { try { $e = $seq.ConvertToTextUnitEffect($e, 2) } catch {} }
       $e.Timing.Duration = [single]$a.dur
       $e.Timing.TriggerDelayTime = [single]$a.at
+      # Everything that moves in slows down gently at the end (no abrupt stop)
+      if ($a.effect -ne 'fade') { $e.Timing.Decelerate = 0.7 }
       $applied++
     }
 

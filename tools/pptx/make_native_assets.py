@@ -26,6 +26,11 @@ COLORS = {
     "white": (232, 240, 255),
     "coral": (255, 122, 107),
 }
+if LIGHT:  # same hues, tuned for a pale background (matches LIGHT_MAP in the deck builders)
+    COLORS.update({
+        "grey": (122, 132, 163), "blue": (47, 107, 223), "violet": (115, 81, 214), "cyan": (10, 141, 176),
+        "amber": (217, 126, 15), "teal": (14, 147, 132), "white": (140, 154, 230), "coral": (220, 84, 64),
+    })
 
 
 def save(img, name, size=None):
@@ -194,23 +199,24 @@ gyroscope()
 # ---------------------------------------------------------------- background
 def background():
     if LIGHT:
+        # Soft "paper" background: cool off-white, two very light colour washes
+        # (indigo top-right, teal bottom-left) and a faint dot grid, like a map sheet.
         W, H = 1920, 1080
         img = Image.new("RGB", (W, H))
         d = ImageDraw.Draw(img)
         for y in range(H):
             k = y / H
-            d.line([(0, y), (W, y)], fill=(int(246 - 18 * k), int(248 - 14 * k), int(255 - 6 * k)))
+            d.line([(0, y), (W, y)], fill=(int(250 - 8 * k), int(251 - 6 * k), int(255 - 2 * k)))
         neb = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         nd = ImageDraw.Draw(neb)
-        for (x, y, r, col, a) in ((1400, 420, 520, (150, 175, 255), 90), (250, 900, 460, (200, 175, 255), 80)):
+        for (x, y, r, col, a) in ((1500, 260, 560, (115, 81, 214), 34), (220, 980, 520, (14, 147, 132), 26), (960, 560, 420, (47, 107, 223), 14)):
             nd.ellipse([x - r, y - r, x + r, y + r], fill=col + (a,))
-        neb = neb.filter(ImageFilter.GaussianBlur(170))
+        neb = neb.filter(ImageFilter.GaussianBlur(190))
         img = Image.alpha_composite(img.convert("RGBA"), neb)
-        st = ImageDraw.Draw(img)
-        rnd = random.Random(7)
-        for _ in range(260):
-            x, y = rnd.random() * W, rnd.random() * H
-            st.ellipse([x, y, x + 2, y + 2], fill=(120, 140, 200, 120))
+        dots = ImageDraw.Draw(img)
+        for gy in range(24, H, 48):
+            for gx in range(24, W, 48):
+                dots.ellipse([gx - 1.2, gy - 1.2, gx + 1.2, gy + 1.2], fill=(27, 35, 64, 13))
         img.convert("RGB").save(os.path.join(OUT, "background.png"), optimize=True)
         return
     W, H = 1920, 1080
