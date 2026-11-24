@@ -57,7 +57,9 @@ try {
       }
       $e.Timing.Duration = [single]$a.dur
       $e.Timing.TriggerDelayTime = [single]$a.delay
-      $e.Timing.RepeatCount = 9999
+      # repeat: play N times (a motion path then stays at its end point); default loops forever
+      if ($a.repeat) { $e.Timing.RepeatCount = [single]$a.repeat } else { $e.Timing.RepeatCount = 9999 }
+      if ($a.smooth) { $e.Timing.SmoothStart = -1; $e.Timing.SmoothEnd = -1 }
       if ($a.reverse) { $e.Timing.AutoReverse = -1 }
       # Pulses "breathe": ease in and out instead of a mechanical back-and-forth
       if ($a.effect -eq 'pulse') { $e.Timing.Accelerate = 0.5; $e.Timing.Decelerate = 0.5 }
