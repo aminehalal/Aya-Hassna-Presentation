@@ -12,7 +12,9 @@ param(
   [string]$Root = (Resolve-Path "$PSScriptRoot\..\..").Path,
   [string]$Base = 'native-base.pptx',
   [string]$Plan = 'native-anims.json',
-  [string]$Output = 'Presentation-EST-Sale-animee.pptx'
+  [string]$Output = 'Presentation-EST-Sale-animee.pptx',
+  # Morph mode: 3954 = by object, 3955 = by word, 3956 = by character
+  [int]$Morph = 3954
 )
 $ErrorActionPreference = 'Stop'
 
@@ -24,7 +26,7 @@ $outPath = Join-Path $export $Output
 $ENTER = @{ fade = 10; zoom = 23; fadedZoom = 48; ascend = 39; expand = 50; wipe = 22; fly = 2; wheel = 21 }
 $DIR = @{ top = 10; bottom = 11; left = 4; right = 2 }
 $WITH_PREVIOUS = 2
-$MORPH = 3954
+$MORPH = $Morph
 $FADE = 1793
 
 $ppt = New-Object -ComObject PowerPoint.Application
