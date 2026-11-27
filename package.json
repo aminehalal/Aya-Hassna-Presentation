@@ -12,7 +12,8 @@
     "pptx:native": "python tools/pptx/make_native_assets.py && node tools/pptx/build-native.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1",
     "pptx:enjeux": "node tools/pptx/build-enjeux.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1 -Base enjeux-base.pptx -Plan enjeux-anims.json -Output Enjeux-RH-2023-carte-conceptuelle.pptx",
     "pptx:clair": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/build-light.ps1",
-    "pptx:skills": "python tools/pptx/make_skills_assets.py && node tools/pptx/build-skills.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1 -Base skills-base.pptx -Plan skills-anims.json -Output Upskilling-Reskilling-CLAIR.pptx -Morph 3955"
+    "pptx:skills": "python tools/pptx/make_skills_assets.py && node tools/pptx/build-skills.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1 -Base skills-base.pptx -Plan skills-anims.json -Output Upskilling-Reskilling-CLAIR.pptx -Morph 3955",
+    "pptx:careers": "python tools/pptx/make_careers_assets.py && node tools/pptx/build-careers.mjs && powershell -NoProfile -ExecutionPolicy Bypass -File tools/pptx/finalize-native.ps1 -Base careers-base.pptx -Plan careers-anims.json -Output Gestion-des-carrieres.pptx -Morph 3955"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
